@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOL.OS - Visualiseur & Réactions</title>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/1.8.0/3Dmol-min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- STYLE IDENTIQUE (NEO-BRUTALISM) --- */
+        :root { --bg: #fff; --text: #000; }
+        body.theme-brutal {
+            --bg: #f2f2f2; --surface: #ffffff; --text: #121212; --border: 3px solid #121212;
+            --shadow: 5px 5px 0px #121212; --green: #4ade80; --blue: #3b82f6; --font-main: 'Space Mono', monospace; --radius: 0px;
+        }
+        body.theme-glass {
+            --bg: #0f172a; --surface: rgba(30, 41, 59, 0.8); --text: #e2e8f0; --border: 1px solid rgba(148, 163, 184, 0.2);
+            --shadow: 0 10px 30px rgba(0,0,0,0.5); --green: #10b981; --blue: #60a5fa; --font-main: 'Inter', sans-serif; --radius: 20px;
+            background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
+        }
+        body { font-family: var(--font-main); background-color: var(--bg); color: var(--text); margin: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; transition: background 0.3s; }
+
+        /* TOP BAR */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--surface); border-bottom: var(--border); z-index: 50; }
+        .logo-group { display: flex; align-items: center; gap: 15px; }
+        .logo { font-weight: 800; font-size: 1.2rem; letter-spacing: -1px; text-transform: uppercase; }
+        
+        .info-wrapper { position: relative; display: inline-block; }
+        .info-btn { background: transparent; border: none; color: var(--text); font-size: 1.2rem; cursor: pointer; opacity: 0.6; transition: 0.2s; }
+        .info-btn:hover { opacity: 1; transform: scale(1.1); }
+        .info-dropdown { visibility: hidden; opacity: 0; position: absolute; top: 100%; left: 0; width: 300px; background: var(--surface); border: var(--border); border-radius: var(--radius); padding: 15px; box-shadow: var(--shadow); margin-top: 10px; z-index: 100; transition: 0.2s; font-size: 0.85rem; backdrop-filter: blur(10px); }
+        .info-wrapper:hover .info-dropdown { visibility: visible; opacity: 1; transform: translateY(5px); }
+        .insta-link { display: block; margin-bottom: 10px; color: var(--text); font-weight: bold; text-decoration: none; border-bottom: 1px solid var(--text); padding-bottom: 5px; }
+        .insta-link:hover { color: #E1306C; border-color: #E1306C; }
+
+        .top-actions button { background: transparent; border: var(--border); color: var(--text); padding: 8px 15px; cursor: pointer; font-family: inherit; font-weight: bold; box-shadow: var(--shadow); margin-left: 10px; border-radius: var(--radius); }
+        .top-actions button:active { transform: translate(2px, 2px); box-shadow: none; }
+
+        /* LAYOUT */
+        .main-container { display: grid; grid-template-columns: 1fr 380px; gap: 20px; padding: 20px; height: calc(100vh - 70px); box-sizing: border-box; }
+        .viewer-wrapper { background: #fff; border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow); position: relative; overflow: hidden; }
+        body.theme-glass .viewer-wrapper { background: #1e293b; }
+        #gldiv { width: 100%; height: 100%; position: relative; }
+        
+        #image2d { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: white; display: none; 
+            justify-content: center; align-items: center; z-index: 5;
+        }
+        #image2d img { max-width: 90%; max-height: 90%; object-fit: contain; }
+
+        /* CONTROLS */
+        .controls-wrapper { display: flex; flex-direction: column; gap: 15px; }
+        .panel { background: var(--surface); border: var(--border); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); backdrop-filter: blur(10px); transition: 0.3s; }
+        .input-group label { font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 5px; opacity: 0.7; }
+        .input-group input, .input-group select { width: 100%; padding: 12px; background: rgba(0,0,0,0.05); border: 1px solid var(--text); color: var(--text); font-family: inherit; box-sizing: border-box; border-radius: 4px; }
+        
+        .btn-big { padding: 15px; border: var(--border); font-family: inherit; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: var(--shadow); border-radius: var(--radius); transition: all 0.2s; text-transform: uppercase; width: 100%; margin-top: 10px; }
+        .btn-big:hover { transform: translateY(-2px); }
+        .btn-big:active { transform: translateY(2px); box-shadow: none; }
+        .btn-search { background: var(--blue); color: #fff; }
+        .btn-anim { background: var(--green); color: #000; display:none; } /* Hidden by default */
+        
+        .mode-toggle { display: flex; margin-bottom: 10px; gap: 5px; }
+        .mode-btn { flex: 1; padding: 8px; border: 1px solid var(--text); background: transparent; color: var(--text); cursor: pointer; font-size: 0.8rem; }
+        .mode-btn.active { background: var(--text); color: var(--bg); font-weight: bold; }
+
+        .tags-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .tag { background: rgba(0,0,0,0.05); padding: 5px 10px; font-size: 0.8rem; cursor: pointer; border: 1px solid var(--text); border-radius: 4px; transition: 0.2s; }
+        .tag:hover { background: var(--text); color: var(--bg); }
+
+        .viz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .viz-btn { background: transparent; border: 1px solid var(--text); color: var(--text); padding: 8px; cursor: pointer; font-size: 0.8rem; border-radius: 4px; }
+        .viz-btn.active { background: var(--text); color: var(--bg); }
+
+        .loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; color: white; font-size: 1.5rem; z-index: 10; display: none; }
+        .error-msg { color: var(--red); font-size: 0.9rem; margin-top: 10px; display: none; font-weight: bold; }
+
+        /* Animation specific UI */
+        .reaction-controls { display: none; }
+    </style>
+</head>
+<body class="theme-brutal">
+
+    <div class="top-bar">
+        <div class="logo-group">
+            <div class="logo"><i class="fas fa-atom"></i> MOL.OS</div>
+            <div class="info-wrapper">
+                <button class="info-btn"><i class="fas fa-info-circle"></i></button>
+                <div class="info-dropdown">
+                    <a href="https://www.instagram.com/matteocean/" target="_blank" class="insta-link">
+                        <i class="fab fa-instagram"></i> @matteocean
+                    </a>
+                    <div style="opacity:0.8; font-size:0.8rem">
+                        Moteur 3Dmol + Interpolation XYZ.<br>Visualisation & Réactions.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="top-actions">
+            <button onclick="toggleSpin()"><i class="fas fa-sync-alt"></i> Rotation</button>
+            <button onclick="toggleTheme()"><i class="fas fa-adjust"></i> Style</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="viewer-wrapper">
+            <div id="loader" class="loader"><i class="fas fa-spinner fa-spin"></i>&nbsp; Calcul...</div>
+            <div id="image2d"><img id="molImage" src="" alt="Vue Topologique"></div>
+            <div id="gldiv"></div>
+        </div>
+
+        <div class="controls-wrapper">
+            <div class="panel">
+                <div class="mode-toggle">
+                    <button class="mode-btn active" onclick="setMode('name')" id="mode-name">Nom</button>
+                    <button class="mode-btn" onclick="setMode('smiles')" id="mode-smiles">SMILES</button>
+                    <!-- NOUVEAU MODE -->
+                    <button class="mode-btn" onclick="setMode('reaction')" id="mode-reaction" style="color:var(--green); border-color:var(--green)">⚡ Réaction</button>
+                </div>
+
+                <!-- INPUT STANDARD -->
+                <div id="search-controls">
+                    <div class="input-group">
+                        <label id="inputLabel">Nom de la molécule (Anglais)</label>
+                        <input type="text" id="molInput" placeholder="Ex: Caffeine, Aspirin..." onkeypress="handleEnter(event)">
+                    </div>
+                    <button class="btn-big btn-search" onclick="launchSearch()"><i class="fas fa-cube"></i> Générer</button>
+                    <div class="tags-container" id="tagsBox"></div>
+                </div>
+
+                <!-- CONTROLES REACTION -->
+                <div id="reaction-controls" class="reaction-controls">
+                    <div class="input-group">
+                        <label>Choisir une réaction</label>
+                        <select id="reactionSelect">
+                            <option value="methane_combustion">Combustion Méthane (CH4 + O2)</option>
+                            <option value="water_formation">Formation Eau (H2 + O2)</option>
+                            <!-- On peut ajouter d'autres templates ici -->
+                        </select>
+                    </div>
+                    <button class="btn-big btn-anim" id="btnPlayReaction" onclick="playReaction()"><i class="fas fa-play"></i> Lancer l'Animation</button>
+                    <div style="margin-top:15px; font-size:0.8rem; opacity:0.7">
+                        <i class="fas fa-info-circle"></i> Le moteur calcule 60 étapes intermédiaires pour simuler la rupture et formation des liaisons.
+                    </div>
+                </div>
+
+                <div id="errorMsg" class="error-msg"><i class="fas fa-bug"></i> Structure Impossible / Inconnue</div>
+            </div>
+
+            <div class="panel">
+                <div class="input-group">
+                    <label>Type de Vue</label>
+                    <div class="viz-options">
+                        <button class="viz-btn active" onclick="setStyle('stick')" id="btn-stick">Bâtons 3D</button>
+                        <button class="viz-btn" onclick="setStyle('sphere')" id="btn-sphere">Sphères 3D</button>
+                        <button class="viz-btn" onclick="setStyle('line')" id="btn-line">Lignes 3D</button>
+                        <button class="viz-btn" onclick="setStyle('2d')" id="btn-2d" style="color:var(--blue); border-color:var(--blue)">2D Topo</button>
+                    </div>
+                </div>
+                <div class="input-group" style="margin-top:20px;">
+                    <div style="font-size: 0.9rem; line-height: 1.5;">
+                        <strong>Source :</strong> <span id="sourceInfo">PubChem</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let viewer = null;
+    let currentStyle = 'stick';
+    let isSpinning = true;
+    let searchMode = 'name'; 
+    let currentMolVal = '';
+
+    // --- DATA REACTIONS (Templates XYZ) ---
+    // L'ordre des atomes DOIT être identique entre Start et End pour que l'interpolation fonctionne.
+    // Format: Symbole X Y Z
+    const reactions = {
+        methane_combustion: {
+            name: "Combustion Méthane",
+            // CH4 (C centre) + 2 O2 (loin)
+            start: `9
+Reaction Start
+C 0.000 0.000 0.000
+H 0.630 0.630 0.630
+H -0.630 -0.630 0.630
+H -0.630 0.630 -0.630
+H 0.630 -0.630 -0.630
+O 3.500 0.000 0.000
+O 4.700 0.000 0.000
+O -3.500 0.000 0.000
+O -4.700 0.000 0.000`,
+            // CO2 (C centre) + 2 H2O
+            end: `9
+Reaction End
+C 0.000 0.000 0.000
+H 3.000 1.500 0.000
+H 3.000 -1.500 0.000
+H -3.000 1.500 0.000
+H -3.000 -1.500 0.000
+O 1.200 0.000 0.000
+O 3.800 0.000 0.000
+O -1.200 0.000 0.000
+O -3.800 0.000 0.000`
+        },
+        water_formation: {
+            name: "Formation Eau",
+            // 2 H2 + O2
+            start: `6
+H2 + O2 Start
+O -1.000 0.000 0.000
+O 1.000 0.000 0.000
+H -3.000 0.500 0.000
+H -3.000 -0.500 0.000
+H 3.000 0.500 0.000
+H 3.000 -0.500 0.000`,
+            // 2 H2O
+            end: `6
+H2 + O2 End
+O -1.500 0.000 0.000
+O 1.500 0.000 0.000
+H -2.000 0.800 0.000
+H -2.000 -0.800 0.000
+H 2.000 0.800 0.000
+H 2.000 -0.800 0.000`
+        }
+    };
+
+    const commonMols = [
+        {name: 'Eau', val: 'Water'}, {name: 'Aspirine', val: 'Aspirin'},
+        {name: 'Caféine', val: 'Caffeine'}, {name: 'Glucose', val: 'Glucose'}
+    ];
+    const smilesMols = [
+        {name: 'Ethanol', val: 'CCO'}, {name: 'Benzène', val: 'c1ccccc1'}
+    ];
+
+    $(document).ready(function() {
+        let config = { backgroundColor: 'white' };
+        if(localStorage.getItem('mol_theme') === 'theme-glass') {
+            $('body').addClass('theme-glass').removeClass('theme-brutal');
+            config.backgroundColor = '#1e293b';
+        }
+        viewer = $3Dmol.createViewer($('#gldiv'), config);
+        updateTags();
+        $('#molInput').val('Caffeine');
+        launchSearch();
+    });
+
+    function setMode(mode) {
+        searchMode = mode;
+        $('.mode-btn').removeClass('active');
+        $('#mode-' + mode).addClass('active');
+
+        // Gestion UI React vs Search
+        if(mode === 'reaction') {
+            $('#search-controls').hide();
+            $('#reaction-controls').css('display', 'flex');
+            $('.btn-anim').css('display', 'block');
+            $('#sourceInfo').text("Moteur Cinétique MOL.OS");
+            $('#image2d').hide();
+            $('#gldiv').show();
+            // Charger la première frame de la réaction par défaut
+            loadReactionPreview();
+        } else {
+            $('#search-controls').show();
+            $('#reaction-controls').hide();
+            $('.btn-anim').hide();
+            
+            if(mode === 'name') {
+                $('#inputLabel').text('Nom de la molécule (Anglais)');
+                $('#molInput').attr('placeholder', 'Ex: Caffeine...');
+            } else {
+                $('#inputLabel').text('Code SMILES');
+                $('#molInput').attr('placeholder', 'Ex: CCO...');
+            }
+            updateTags();
+        }
+    }
+
+    function loadReactionPreview() {
+        let key = $('#reactionSelect').val();
+        let r = reactions[key];
+        viewer.clear();
+        viewer.addModel(r.start, "xyz");
+        viewer.setStyle({}, {stick: {radius: 0.15}, sphere: {scale: 0.3}});
+        viewer.zoomTo();
+        viewer.render();
+    }
+
+    // --- ALGORITHME D'INTERPOLATION ---
+    function playReaction() {
+        let key = $('#reactionSelect').val();
+        let r = reactions[key];
+        
+        $('#loader').show().html('<i class="fas fa-cog fa-spin"></i>&nbsp; Calcul Trajectoire...');
+        
+        // Parsing manuel des XYZ
+        let atomsStart = parseXYZ(r.start);
+        let atomsEnd = parseXYZ(r.end);
+        
+        // Génération de 60 frames (interpolation linéaire)
+        let frames = 60;
+        let trajectoryXYZ = "";
+        
+        for(let i = 0; i <= frames; i++) {
+            let t = i / frames; // Pourcentage 0.0 à 1.0
+            
+            // Interpolation Ease-in-out pour plus de réalisme
+            let smoothT = t < .5 ? 2 * t * t : -1 + (4 - 2 * t) * t; 
+
+            trajectoryXYZ += `${atomsStart.length}\nFrame ${i}\n`;
+            
+            for(let j = 0; j < atomsStart.length; j++) {
+                let startAt = atomsStart[j];
+                let endAt = atomsEnd[j];
+                
+                let x = startAt.x + (endAt.x - startAt.x) * smoothT;
+                let y = startAt.y + (endAt.y - startAt.y) * smoothT;
+                let z = startAt.z + (endAt.z - startAt.z) * smoothT;
+                
+                trajectoryXYZ += `${startAt.elem} ${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}\n`;
+            }
+        }
+
+        // Chargement de la trajectoire dans 3Dmol
+        setTimeout(() => {
+            viewer.clear();
+            // multimodule: true permet de charger plusieurs structures XYZ comme une animation
+            let model = viewer.addModel(trajectoryXYZ, "xyz", {keepH: true, vibration:false});
+            
+            viewer.setStyle({}, {stick: {radius: 0.15}, sphere: {scale: 0.3}});
+            viewer.zoomTo();
+            
+            // Animation : loop forward
+            viewer.animate({loop: "forward", interval: 30, reparameterize: true}); 
+            // reparameterize: true force le recalcul des liaisons à chaque frame ! C'est la clé.
+            
+            $('#loader').hide();
+        }, 100);
+    }
+
+    function parseXYZ(str) {
+        let lines = str.trim().split('\n');
+        let atoms = [];
+        // Sauter les 2 premières lignes (Nombre d'atomes + Commentaire)
+        for(let i = 2; i < lines.length; i++) {
+            let parts = lines[i].trim().split(/\s+/);
+            if(parts.length >= 4) {
+                atoms.push({
+                    elem: parts[0],
+                    x: parseFloat(parts[1]),
+                    y: parseFloat(parts[2]),
+                    z: parseFloat(parts[3])
+                });
+            }
+        }
+        return atoms;
+    }
+
+    // --- FONCTIONS EXISTANTES ---
+
+    function updateTags() {
+        const container = $('#tagsBox'); container.empty();
+        const list = (searchMode === 'name') ? commonMols : smilesMols;
+        list.forEach(m => { container.append(`<div class="tag" onclick="quickLoad('${m.val}')">${m.name}</div>`); });
+    }
+
+    function handleEnter(e) { if(e.key === 'Enter') launchSearch(); }
+    function quickLoad(val) { $('#molInput').val(val); launchSearch(); }
+
+    function launchSearch() {
+        let val = $('#molInput').val().trim();
+        if(!val) return;
+        currentMolVal = val;
+        
+        if(currentStyle === '2d') update2DImage();
+        
+        if(searchMode === 'name') searchByName(val);
+        else searchBySMILES(val);
+    }
+
+    function searchByName(name) {
+        $('#loader').show(); $('#errorMsg').hide(); $('#sourceInfo').text("PubChem (NIH)");
+        let sdfUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${name}/SDF?record_type=3d`;
+        $.ajax({
+            url: sdfUrl,
+            success: function(data) { renderMol(data, 'sdf'); },
+            error: function() {
+                let fbUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${name}/SDF`;
+                $.ajax({
+                    url: fbUrl,
+                    success: function(data) { renderMol(data, 'sdf'); },
+                    error: function() { $('#errorMsg').show(); $('#loader').hide(); }
+                });
+            }
+        });
+        update2DImage(); 
+    }
+
+    function searchBySMILES(smiles) {
+        $('#loader').show(); $('#errorMsg').hide(); $('#sourceInfo').text("Génération Algorithmique");
+        let encodedSmiles = encodeURIComponent(smiles);
+        let cactusUrl = `https://cactus.nci.nih.gov/chemical/structure/${encodedSmiles}/file?format=sdf&get3d=true`;
+        $.ajax({
+            url: cactusUrl,
+            success: function(data) { renderMol(data, 'sdf'); },
+            error: function() { $('#errorMsg').show(); $('#loader').hide(); }
+        });
+        update2DImage();
+    }
+
+    function renderMol(data, format) {
+        viewer.clear(); viewer.addModel(data, format);
+        if(currentStyle !== '2d') { applyStyle(); viewer.zoomTo(); viewer.render(); }
+        $('#loader').hide();
+    }
+
+    function update2DImage() {
+        let url = '';
+        if(searchMode === 'name') {
+            url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${currentMolVal}/PNG?record_type=2d&image_size=large`;
+        } else {
+            url = `https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(currentMolVal)}/image?width=500&height=500`;
+        }
+        $('#molImage').attr('src', url);
+    }
+
+    function setStyle(style) {
+        currentStyle = style;
+        $('.viz-btn').removeClass('active'); $('#btn-' + style).addClass('active');
+
+        if(style === '2d') {
+            $('#gldiv').hide();
+            $('#image2d').css('display', 'flex');
+            update2DImage();
+        } else {
+            $('#image2d').hide();
+            $('#gldiv').show();
+            applyStyle(); 
+            viewer.render();
+        }
+    }
+
+    function applyStyle() {
+        if(currentStyle === 'stick') viewer.setStyle({}, {stick: {radius: 0.15}, sphere: {scale: 0.3}});
+        else if (currentStyle === 'sphere') viewer.setStyle({}, {sphere: {}});
+        else if (currentStyle === 'line') viewer.setStyle({}, {line: {}});
+    }
+
+    function toggleSpin() { isSpinning = !isSpinning; viewer.spin(isSpinning); }
+    setTimeout(() => { if(viewer) viewer.spin(true); }, 1000);
+
+    function toggleTheme() {
+        if ($('body').hasClass('theme-brutal')) {
+            $('body').removeClass('theme-brutal').addClass('theme-glass');
+            localStorage.setItem('mol_theme', 'theme-glass');
+            viewer.setBackgroundColor('#1e293b');
+        } else {
+            $('body').removeClass('theme-glass').addClass('theme-brutal');
+            localStorage.setItem('mol_theme', 'theme-brutal');
+            viewer.setBackgroundColor('white');
+        }
+        viewer.render();
+    }
+</script>
+</body>
+</html>

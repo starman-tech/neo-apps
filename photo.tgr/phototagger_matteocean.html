@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHOTO TAGGER // MATTEOCEAN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+
+/* ────────────────────────────────────────────────
+   THEMES
+──────────────────────────────────────────────── */
+body.theme-brutal {
+  --bg: #f0f0f0; --surface: #ffffff; --text: #121212;
+  --border: 3px solid #121212; --shadow: 7px 7px 0 #121212;
+  --accent: #4ade80; --accent2: #3b82f6; --accent3: #f43f5e;
+  --font: 'Space Mono', monospace; --radius: 0px;
+  --good: #4ade80; --ok: #fbbf24; --bad: #f43f5e;
+}
+body.theme-glass {
+  --bg: #070709; --surface: rgba(14,14,18,0.92); --text: #dde6f0;
+  --border: 1px solid rgba(255,255,255,0.10); --shadow: 0 0 40px rgba(16,185,129,0.15);
+  --accent: #10b981; --accent2: #60a5fa; --accent3: #fb7185;
+  --font: 'Inter', sans-serif; --radius: 12px;
+  --good: #10b981; --ok: #f59e0b; --bad: #fb7185;
+  background-image: radial-gradient(ellipse at 20% 10%, #0e1a2b 0%, #020204 65%);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  overflow-x: hidden;
+  min-height: 100vh;
+  transition: background 0.4s, color 0.4s;
+  animation: bodyFadeIn 0.4s ease-out;
+}
+@keyframes bodyFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ────────────────────────────────────────────────
+   NAV
+──────────────────────────────────────────────── */
+nav {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 36px; border-bottom: var(--border);
+  background: var(--surface);
+  position: sticky; top: 0; z-index: 300;
+  backdrop-filter: blur(18px);
+}
+.brand { font-size: 1.05rem; font-weight: 900; letter-spacing: -0.3px; user-select: none; flex-shrink: 0; cursor: default; }
+.brand .acc { color: var(--accent); }
+.nav-spacer { flex: 1; }
+
+.info-wrap { position: relative; }
+.info-btn { background: none; border: none; color: var(--text); font-size: 1rem; cursor: pointer; opacity: 0.45; transition: 0.15s; padding: 4px; }
+.info-btn:hover { opacity: 1; transform: scale(1.1); }
+.info-dd {
+  visibility: hidden; opacity: 0;
+  position: absolute; top: calc(100% + 8px); left: 0;
+  background: var(--surface); border: var(--border);
+  padding: 14px; width: 250px; border-radius: var(--radius);
+  z-index: 400; transition: opacity 0.15s, visibility 0.15s;
+  pointer-events: none;
+}
+.info-wrap:hover .info-dd { visibility: visible; opacity: 1; pointer-events: auto; }
+.insta-link { display: flex; align-items: center; gap: 7px; color: var(--text); text-decoration: none; font-weight: bold; font-size: 0.85rem; margin-bottom: 9px; }
+.insta-link:hover { color: var(--accent); }
+.info-dd p { font-size: 0.73rem; line-height: 1.6; opacity: 0.65; }
+
+.nav-btn {
+  background: none; border: var(--border); color: var(--text);
+  padding: 7px 15px; cursor: pointer; font-family: var(--font);
+  font-size: 0.75rem; font-weight: bold; letter-spacing: 0.8px;
+  transition: 0.15s; border-radius: var(--radius); white-space: nowrap;
+}
+.nav-btn:hover { background: var(--text); color: var(--bg); }
+
+/* ────────────────────────────────────────────────
+   HERO
+──────────────────────────────────────────────── */
+.hero { position: relative; padding: 42px 36px 34px; border-bottom: var(--border); overflow: hidden; }
+.grid-bg {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(var(--text) 1px, transparent 1px), linear-gradient(90deg, var(--text) 1px, transparent 1px);
+  background-size: 46px 46px; opacity: 0.04; z-index: 0;
+}
+.hero-inner { position: relative; z-index: 1; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.role-tag { display: inline-block; background: var(--text); color: var(--bg); padding: 3px 11px; font-size: 0.65rem; letter-spacing: 3px; margin-bottom: 12px; font-weight: bold; }
+.hero h1 { font-size: clamp(2.2rem, 5vw, 4rem); font-weight: 900; letter-spacing: -2.5px; line-height: 1; }
+.hero h1 .h-acc { color: var(--accent); }
+.hero .sub { opacity: 0.45; font-size: 0.78rem; letter-spacing: 1.5px; margin-top: 9px; }
+
+.load-pill {
+  display: none; align-items: center; gap: 12px;
+  font-size: 0.7rem; font-family: 'Space Mono', monospace;
+  opacity: 0.7; padding: 8px 14px; border: var(--border); border-radius: var(--radius);
+}
+.load-pill .lbar { width: 120px; height: 4px; background: rgba(128,128,128,0.3); border-radius: 99px; overflow: hidden; }
+.load-pill .lfill { height: 100%; background: var(--accent); border-radius: 99px; width: 0%; transition: width 0.25s ease; }
+
+/* ────────────────────────────────────────────────
+   CONTROLS BAR
+──────────────────────────────────────────────── */
+.controls {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 14px 36px; border-bottom: var(--border);
+  background: var(--surface);
+  position: sticky; top: 50px; z-index: 200;
+  backdrop-filter: blur(18px);
+}
+.cg { display: flex; flex-direction: column; gap: 5px; }
+.cl { font-size: 0.58rem; opacity: 0.45; letter-spacing: 2.5px; font-weight: bold; }
+
+.tog { display: flex; border: var(--border); overflow: hidden; border-radius: var(--radius); }
+.tog-btn {
+  padding: 7px 16px; background: none; border: none; cursor: pointer;
+  font-family: var(--font); font-weight: bold; font-size: 0.76rem;
+  color: var(--text); transition: background 0.12s, color 0.12s;
+  display: flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.tog-btn + .tog-btn { border-left: var(--border); }
+.tog-btn.on { background: var(--text); color: var(--bg); }
+.tog-btn:not(.on):hover { background: var(--bg); }
+
+.file-lbl {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 16px; border: var(--border); cursor: pointer;
+  font-family: var(--font); font-weight: bold; font-size: 0.76rem;
+  background: none; color: var(--text);
+  transition: background 0.15s, color 0.15s; border-radius: var(--radius); white-space: nowrap;
+}
+.file-lbl:hover { background: var(--text); color: var(--bg); }
+#folderInput { display: none; }
+
+.exp-btn {
+  padding: 7px 20px; background: var(--accent); color: #0a0a0a;
+  border: var(--border); cursor: pointer; font-family: var(--font);
+  font-weight: bold; font-size: 0.76rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+  border-radius: var(--radius); display: flex; align-items: center; gap: 7px; white-space: nowrap;
+}
+.exp-btn:hover:not(:disabled) { transform: translate(-3px,-3px); box-shadow: 3px 3px 0 var(--text); }
+.exp-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+body.theme-glass .exp-btn:hover:not(:disabled) { box-shadow: 0 0 22px var(--accent); transform: translateY(-2px); }
+
+.stats-bar { margin-left: auto; display: flex; gap: 14px; font-size: 0.7rem; opacity: 0.55; flex-wrap: wrap; }
+.stats-bar span { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+
+/* ────────────────────────────────────────────────
+   CHIPS / BADGES
+──────────────────────────────────────────────── */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; font-size: 0.63rem; font-weight: bold;
+  letter-spacing: 0.8px; border-radius: var(--radius); white-space: nowrap;
+}
+.ch-ph     { border: var(--border); opacity: 0.28; }
+.ch-dim    { border: var(--border); }
+.ch-qgood  { background: var(--good); color: #0a0a0a; }
+.ch-qok    { background: var(--ok);   color: #0a0a0a; }
+.ch-qbad   { background: var(--bad);  color: #fff; }
+.ch-parfait   { background: #4ade80; color: #0a0a0a; }
+.ch-excellent { background: #86efac; color: #0a0a0a; }
+.ch-bon       { background: #fbbf24; color: #0a0a0a; }
+.ch-correct   { background: #fb923c; color: #0a0a0a; }
+.ch-faible    { background: #f43f5e; color: #fff; }
+.ch-insuf     { background: #7f1d1d; color: #fff; }
+
+/* ────────────────────────────────────────────────
+   GRID SECTION
+──────────────────────────────────────────────── */
+#gridSection { padding: 22px 36px; }
+
+.empty-state {
+  text-align: center; padding: 70px 20px;
+  border: var(--border); border-style: dashed; border-radius: var(--radius);
+}
+.empty-state i { font-size: 3rem; display: block; margin-bottom: 14px; opacity: 0.2; }
+.empty-state p { opacity: 0.38; }
+.empty-state small { display: block; opacity: 0.2; font-size: 0.78rem; margin-top: 6px; }
+
+#photoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  border: var(--border); background: var(--surface);
+  border-radius: var(--radius); overflow: hidden;
+  transition: box-shadow 0.18s;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 190px;
+  animation: slideUp 0.32s ease-out both;
+}
+@keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.card:hover { box-shadow: var(--shadow); }
+
+.card-thumb {
+  width: 210px; min-width: 210px; height: 185px;
+  overflow: hidden; position: relative; background: #0e0e0e; flex-shrink: 0;
+}
+.card-thumb img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform 0.35s ease;
+}
+.card:hover .card-thumb img { transform: scale(1.04); }
+
+/* Shimmer placeholder while loading */
+.shimmer {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(128,128,128,0.12) 25%, rgba(128,128,128,0.22) 50%, rgba(128,128,128,0.12) 75%);
+  background-size: 200% 100%;
+  animation: shim 1.4s infinite;
+}
+@keyframes shim { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+.card-num {
+  position: absolute; bottom: 6px; left: 7px;
+  font-size: 0.58rem; font-weight: bold; letter-spacing: 2px;
+  background: rgba(0,0,0,0.7); color: #fff; padding: 1px 6px; backdrop-filter: blur(4px);
+}
+
+.card-body {
+  flex: 1; padding: 12px 17px;
+  display: flex; flex-direction: column; gap: 9px;
+  border-left: var(--border); min-width: 0;
+}
+.card-fname { font-size: 0.66rem; opacity: 0.32; font-family: 'Space Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.card-psize { font-size: 0.62rem; opacity: 0.38; font-family: 'Space Mono', monospace; }
+
+.loc-row { display: flex; align-items: center; gap: 9px; }
+.loc-lbl { font-size: 0.66rem; font-weight: bold; letter-spacing: 1.5px; opacity: 0.5; white-space: nowrap; flex-shrink: 0; }
+.loc-inp {
+  flex: 1; background: var(--bg); border: var(--border);
+  padding: 7px 11px; font-family: var(--font); font-size: 0.84rem;
+  color: var(--text); outline: none; border-radius: var(--radius);
+  transition: border-color 0.15s; min-width: 0;
+}
+.loc-inp:focus { border-color: var(--accent); }
+.loc-inp::placeholder { opacity: 0.25; }
+
+.name-preview {
+  font-family: 'Space Mono', monospace; font-size: 0.71rem;
+  padding: 6px 11px; background: var(--bg);
+  border: var(--border); border-style: dashed; border-radius: var(--radius);
+  display: flex; flex-wrap: wrap; align-items: center; min-height: 31px; gap: 0;
+}
+.np-cam  { color: var(--accent3); font-weight: bold; }
+.np-loc  { color: var(--accent2); font-weight: bold; }
+.np-num  { color: var(--accent);  font-weight: bold; }
+.np-sep  { opacity: 0.32; }
+.np-ext  { opacity: 0.4; }
+.np-ph   { opacity: 0.2; font-style: italic; }
+
+/* ────────────────────────────────────────────────
+   TINDER SECTION
+──────────────────────────────────────────────── */
+#tinderSection { display: none; padding: 18px 36px 38px; }
+
+.tinder-wrap {
+  display: flex;
+  border: var(--border); border-radius: var(--radius);
+  overflow: hidden; background: var(--surface); box-shadow: var(--shadow);
+  height: calc(100vh - 172px);
+  max-height: 760px; min-height: 500px;
+}
+
+/* Image panel */
+.t-img-panel {
+  width: 62%; position: relative;
+  background: #050507; flex-shrink: 0; overflow: hidden; user-select: none;
+}
+.t-img-panel img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: opacity 0.22s ease;
+}
+.t-img-panel img.fading { opacity: 0; }
+
+/* Score seal */
+.t-seal {
+  position: absolute; top: 14px; right: 14px;
+  width: 76px; height: 76px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+  border: 3px solid currentColor; font-family: 'Space Mono', monospace;
+  transition: color 0.3s; z-index: 10;
+}
+.t-seal .sn { font-size: 1.55rem; font-weight: 900; line-height: 1; }
+.t-seal .sl { font-size: 0.48rem; font-weight: bold; letter-spacing: 1px; opacity: 0.8; margin-top: 1px; }
+.seal-parfait   { color: #4ade80; }
+.seal-excellent { color: #86efac; }
+.seal-bon       { color: #fbbf24; }
+.seal-correct   { color: #fb923c; }
+.seal-faible    { color: #f43f5e; }
+.seal-insuf     { color: #ef4444; }
+
+/* Counter */
+.t-counter {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(5px);
+  color: #fff; font-family: 'Space Mono', monospace;
+  font-size: 0.68rem; font-weight: bold; letter-spacing: 2px;
+  padding: 4px 13px; border-radius: 99px; z-index: 10; white-space: nowrap;
+}
+
+/* Arrows */
+.t-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+  border: none; color: #fff; width: 44px; height: 58px;
+  cursor: pointer; font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s, width 0.12s; z-index: 10;
+}
+.t-arrow:hover { background: rgba(0,0,0,0.85); width: 52px; }
+.t-arrow:disabled { opacity: 0.18; cursor: not-allowed; }
+.t-arrow.arr-l { left: 0; border-radius: 0 5px 5px 0; }
+.t-arrow.arr-r { right: 0; border-radius: 5px 0 0 5px; }
+
+/* Info panel */
+.t-info-panel {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 20px; border-left: var(--border);
+  overflow-y: auto; gap: 13px; min-width: 0;
+}
+.t-info-panel::-webkit-scrollbar { width: 3px; }
+.t-info-panel::-webkit-scrollbar-thumb { background: var(--text); border-radius: 99px; }
+
+.t-fname { font-size: 0.66rem; opacity: 0.3; font-family: 'Space Mono', monospace; word-break: break-all; flex-shrink: 0; }
+.t-badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+
+.score-bar { flex-shrink: 0; }
+.score-bar-top { display: flex; justify-content: space-between; font-size: 0.66rem; opacity: 0.5; margin-bottom: 5px; }
+.score-bar-top strong { opacity: 1; font-weight: 900; }
+.score-bar-track { width: 100%; height: 5px; background: var(--bg); border: var(--border); border-radius: 99px; overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 99px; transition: width 0.6s cubic-bezier(0.22,1,0.36,1), background 0.3s; }
+
+.t-preview { flex-shrink: 0; font-family: 'Space Mono', monospace; font-size: 0.71rem; padding: 7px 11px; background: var(--bg); border: var(--border); border-style: dashed; border-radius: var(--radius); display: flex; flex-wrap: wrap; align-items: center; min-height: 32px; gap: 0; }
+
+/* Strip */
+.strip-wrap { flex-shrink: 0; margin-top: auto; padding-top: 12px; border-top: var(--border); }
+.strip-lbl { font-size: 0.58rem; opacity: 0.35; letter-spacing: 2px; margin-bottom: 6px; }
+.strip-row { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: thin; }
+.strip-row::-webkit-scrollbar { height: 3px; }
+.strip-row::-webkit-scrollbar-thumb { background: var(--text); border-radius: 99px; }
+.strip-thumb { width: 46px; height: 35px; flex-shrink: 0; object-fit: cover; cursor: pointer; opacity: 0.35; transition: opacity 0.12s; border: 2px solid transparent; border-radius: var(--radius); }
+.strip-thumb:hover { opacity: 0.75; }
+.strip-thumb.on { opacity: 1; border-color: var(--accent); }
+
+.t-hint { font-size: 0.6rem; opacity: 0.22; letter-spacing: 1px; text-align: center; flex-shrink: 0; }
+.kbd-key { display: inline-block; background: var(--bg); border: var(--border); padding: 0 5px; font-size: 0.58rem; border-radius: 3px; }
+
+/* Tinder transitions */
+@keyframes fromR { from { opacity:0; transform:translateX(28px); } to { opacity:1; transform:translateX(0); } }
+@keyframes fromL { from { opacity:0; transform:translateX(-28px); } to { opacity:1; transform:translateX(0); } }
+.anim-r { animation: fromR 0.23s ease-out; }
+.anim-l { animation: fromL 0.23s ease-out; }
+
+/* ────────────────────────────────────────────────
+   OVERLAY (ZIP progress)
+──────────────────────────────────────────────── */
+.zip-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); z-index: 999; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+.zip-overlay.show { display: flex; }
+.zip-box { background: var(--surface); border: var(--border); padding: 36px 52px; text-align: center; border-radius: var(--radius); min-width: 320px; }
+.zip-box h3 { font-size: 0.95rem; letter-spacing: 2px; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; gap: 9px; }
+.zip-bar { width: 100%; height: 5px; background: var(--bg); border: var(--border); border-radius: 99px; overflow: hidden; }
+.zip-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.28s; border-radius: 99px; }
+.zip-txt { font-size: 0.68rem; opacity: 0.45; margin-top: 10px; font-family: 'Space Mono', monospace; }
+
+/* ────────────────────────────────────────────────
+   MARQUEE / FOOTER
+──────────────────────────────────────────────── */
+.marquee { border-top: var(--border); border-bottom: var(--border); background: var(--text); color: var(--bg); overflow: hidden; padding: 11px 0; }
+.marquee-inner { display: inline-block; white-space: nowrap; animation: marq 30s linear infinite; font-size: 0.72rem; font-weight: bold; letter-spacing: 3px; }
+@keyframes marq { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+
+footer { padding: 36px; border-top: var(--border); background: var(--surface); text-align: center; }
+footer h2 { font-size: 0.95rem; letter-spacing: 3px; margin-bottom: 16px; }
+.socials a { display: inline-flex; width: 42px; height: 42px; border: var(--border); margin: 0 6px; align-items: center; justify-content: center; font-size: 1rem; color: var(--text); text-decoration: none; transition: 0.15s; border-radius: 50%; }
+.socials a:hover { background: var(--text); color: var(--bg); transform: translateY(-4px); }
+footer .code { font-size: 0.7rem; opacity: 0.25; margin-top: 14px; font-family: 'Space Mono', monospace; }
+
+/* ────────────────────────────────────────────────
+   RESPONSIVE
+──────────────────────────────────────────────── */
+@media (max-width: 1100px) { #photoGrid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) {
+  nav, .controls, .hero, #gridSection, #tinderSection { padding-left: 16px; padding-right: 16px; }
+  .controls { top: 46px; gap: 10px; }
+  .stats-bar { display: none; }
+  .card { flex-direction: column; }
+  .card-thumb { width: 100%; min-width: unset; height: 170px; }
+  .card-body { border-left: none; border-top: var(--border); }
+  .tinder-wrap { flex-direction: column; height: auto; }
+  .t-img-panel { width: 100%; height: 240px; }
+  .t-info-panel { border-left: none; border-top: var(--border); }
+  .t-hint { display: none; }
+}
+
+</style>
+</head>
+<body class="theme-brutal">
+
+<!-- ZIP OVERLAY -->
+<div class="zip-overlay" id="zipOverlay">
+  <div class="zip-box">
+    <h3><i class="fas fa-file-archive"></i> CREATION DU ZIP</h3>
+    <div class="zip-bar"><div class="zip-fill" id="zipFill"></div></div>
+    <div class="zip-txt" id="zipTxt">Initialisation...</div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="brand" id="logoText">PHOTO<span class="acc">TAGGER</span> // MATTEOCEAN</div>
+  <div class="info-wrap">
+    <button class="info-btn"><i class="fas fa-info-circle"></i></button>
+    <div class="info-dd">
+      <a href="https://www.instagram.com/matteocean/" target="_blank" class="insta-link">
+        <i class="fab fa-instagram"></i> @matteocean
+      </a>
+      <p>Outil local de renommage photo. Choisir un dossier, renseigner les localisations, exporter un ZIP renomme + recap.</p>
+    </div>
+  </div>
+  <div class="nav-spacer"></div>
+  <button class="nav-btn" onclick="toggleTheme()"><i class="fas fa-adjust"></i> STYLE</button>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="grid-bg"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="role-tag">OUTIL LOCAL · MATTEOCEAN</div>
+      <h1>PHOTO<span class="h-acc"> TAGGER</span></h1>
+      <div class="sub">RENOMMAGE · LOCALISATION · SCORE QUALITE · MODE TINDER · EXPORT ZIP</div>
+    </div>
+    <div class="load-pill" id="loadPill">
+      <span id="loadTxt">Chargement...</span>
+      <div class="lbar"><div class="lfill" id="loadFill"></div></div>
+    </div>
+  </div>
+</header>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="cg">
+    <div class="cl">APPAREIL</div>
+    <div class="tog">
+      <button class="tog-btn on" id="btnDJI" onclick="setCam('dji')"><i class="fas fa-drone-alt"></i> DJI</button>
+      <button class="tog-btn"    id="btnGPR" onclick="setCam('gpr')"><i class="fas fa-camera"></i> GOPRO</button>
+    </div>
+  </div>
+  <div class="cg">
+    <div class="cl">VUE</div>
+    <div class="tog">
+      <button class="tog-btn on" id="btnGrid"   onclick="setView('grid')"><i class="fas fa-th-large"></i> GRILLE</button>
+      <button class="tog-btn"    id="btnTinder" onclick="setView('tinder')"><i class="fas fa-layer-group"></i> TINDER</button>
+    </div>
+  </div>
+  <div class="cg">
+    <div class="cl">DOSSIER SOURCE</div>
+    <label class="file-lbl" for="folderInput"><i class="fas fa-folder-open"></i> CHOISIR UN DOSSIER</label>
+    <input type="file" id="folderInput" accept="image/*" multiple webkitdirectory>
+  </div>
+  <div class="cg" style="margin-left:auto">
+    <div class="cl">EXPORT</div>
+    <button class="exp-btn" id="exportBtn" onclick="exportAll()" disabled>
+      <i class="fas fa-file-archive"></i> EXPORTER ZIP + RECAP
+    </button>
+  </div>
+  <div class="stats-bar" id="statsBar" style="display:none">
+    <span id="sCnt"><i class="fas fa-images"></i> 0</span>
+    <span id="sCam"><i class="fas fa-drone-alt"></i> DJI</span>
+    <span id="sTag"><i class="fas fa-map-marker-alt"></i> 0/0</span>
+    <span id="sGood" style="color:var(--accent)"><i class="fas fa-star"></i> 0 A4+</span>
+  </div>
+</div>
+
+<!-- GRID -->
+<div id="gridSection">
+  <div class="empty-state" id="emptyState">
+    <i class="fas fa-folder-open"></i>
+    <p>Choisissez un dossier pour commencer</p>
+    <small>Photos DJI / GoPro · Score qualite · Mode Tinder</small>
+  </div>
+  <div id="photoGrid"></div>
+</div>
+
+<!-- TINDER -->
+<div id="tinderSection">
+  <div class="tinder-wrap">
+
+    <div class="t-img-panel" id="tImgPanel">
+      <img id="tImg" src="" alt="">
+      <div class="t-seal" id="tSeal">
+        <span class="sn" id="tSealN">--</span>
+        <span class="sl" id="tSealL"></span>
+      </div>
+      <div class="t-counter" id="tCnt">-- / --</div>
+      <button class="t-arrow arr-l" id="arrL" onclick="tinderPrev()"><i class="fas fa-chevron-left"></i></button>
+      <button class="t-arrow arr-r" id="arrR" onclick="tinderNext()"><i class="fas fa-chevron-right"></i></button>
+    </div>
+
+    <div class="t-info-panel" id="tInfoPanel">
+      <div class="t-fname" id="tFname">--</div>
+      <div class="t-badges" id="tBadges"></div>
+      <div class="score-bar">
+        <div class="score-bar-top"><span>SCORE IMPRESSION</span><strong id="tSbarNum">--/100</strong></div>
+        <div class="score-bar-track"><div class="score-bar-fill" id="tSbarFill" style="width:0%"></div></div>
+      </div>
+      <div class="loc-row">
+        <span class="loc-lbl">📍 LIEU</span>
+        <input class="loc-inp" id="tLoc" type="text"
+          placeholder="Paris, Reunion, Maldives..."
+          oninput="onTinderLoc()" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="t-preview" id="tPreview"><span class="np-ph">-- entrez une localisation --</span></div>
+      <div class="strip-wrap" id="stripWrap" style="display:none">
+        <div class="strip-lbl">TOUTES LES PHOTOS</div>
+        <div class="strip-row" id="stripRow"></div>
+      </div>
+      <div class="t-hint">
+        <span class="kbd-key">←</span><span class="kbd-key">→</span> naviguer &nbsp;·&nbsp;
+        <span class="kbd-key">Enter</span> suivant &nbsp;·&nbsp; swipe mobile
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MARQUEE -->
+<div class="marquee">
+  <div class="marquee-inner">
+    &nbsp;// DJI // MATTEOCEAN // PHOTO TAGGER // SCORE QUALITE // MODE TINDER // RENOMMAGE // EXPORT ZIP // DJI // MATTEOCEAN // PHOTO TAGGER // SCORE QUALITE // MODE TINDER // RENOMMAGE // EXPORT ZIP //&nbsp;&nbsp;// DJI // MATTEOCEAN // PHOTO TAGGER // SCORE QUALITE // MODE TINDER // RENOMMAGE // EXPORT ZIP // DJI // MATTEOCEAN // PHOTO TAGGER // SCORE QUALITE // MODE TINDER // RENOMMAGE // EXPORT ZIP //&nbsp;
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <h2>MATTEOCEAN</h2>
+  <div class="socials">
+    <a href="https://www.instagram.com/matteocean/" target="_blank"><i class="fab fa-instagram"></i></a>
+    <a href="https://github.com/starman-tech" target="_blank"><i class="fab fa-github"></i></a>
+  </div>
+  <div class="code">|42|</div>
+</footer>
+
+<script>
+/* ================================================================
+   PHOTO TAGGER — MATTEOCEAN
+   Optimised: Canvas thumbnails, concurrency queue, 2-col grid
+================================================================ */
+
+const THUMB_MAX  = 700;
+const THUMB_Q    = 0.76;
+const CONCURRENT = 4;
+
+/* State */
+let cam   = 'dji';
+let view  = 'grid';
+let tidx  = 0;
+let photos = [];
+let jobQueue = [];
+let activeCount = 0;
+let doneCount   = 0;
+
+/* DOM helper */
+function el(id) { return document.getElementById(id); }
+
+/* ── THEME ─────────────────────────────────────────────────── */
+function toggleTheme() {
+  const isBrutal = document.body.classList.contains('theme-brutal');
+  document.body.className = isBrutal ? 'theme-glass' : 'theme-brutal';
+  localStorage.setItem('mot', document.body.className);
+}
+(function initTheme() {
+  const saved = localStorage.getItem('mot');
+  if (saved === 'theme-glass' || saved === 'theme-brutal') {
+    document.body.className = saved;
+  }
+})();
+
+/* ── HELPERS ───────────────────────────────────────────────── */
+function fileExt(name) {
+  const parts = name.split('.');
+  return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : 'jpg';
+}
+
+function sanitizeLoc(raw) {
+  if (!raw || !raw.trim()) return 'nolieu';
+  return raw.trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-|-$/g, '') || 'nolieu';
+}
+
+function buildNewName(idx) {
+  const p   = photos[idx];
+  const loc = sanitizeLoc(p._loc);
+  const num = String(idx + 1).padStart(3, '0');
+  const ext = fileExt(p.file.name);
+  return cam + '_' + loc + '_' + num + '_matteocean.' + ext;
+}
+
+function previewHTML(idx, raw) {
+  if (!raw || !raw.trim()) return '<span class="np-ph">-- entrez une localisation --</span>';
+  const loc = sanitizeLoc(raw);
+  const num = String(idx + 1).padStart(3, '0');
+  const ext = fileExt(photos[idx].file.name);
+  return '<span class="np-cam">' + cam + '</span>' +
+         '<span class="np-sep">_</span>' +
+         '<span class="np-loc">' + loc + '</span>' +
+         '<span class="np-sep">_</span>' +
+         '<span class="np-num">' + num + '</span>' +
+         '<span class="np-sep">_matteocean.</span>' +
+         '<span class="np-ext">' + ext + '</span>';
+}
+
+/* ── SCORE SYSTEM ──────────────────────────────────────────── */
+const SCORE_CURVE = [
+  [0, 0], [600, 10], [1240, 30], [1748, 50],
+  [2480, 70], [3508, 85], [4961, 95], [7016, 100]
+];
+
+function calcScore(w, h) {
+  if (!w || !h) return { v: 0, lbl: '--', chip: 'ch-ph', seal: 'seal-insuf', bar: '#333' };
+  const shortEdge = Math.min(w, h);
+  let v = 100;
+  const last = SCORE_CURVE[SCORE_CURVE.length - 1];
+  if (shortEdge < last[0]) {
+    for (let i = 1; i < SCORE_CURVE.length; i++) {
+      if (shortEdge <= SCORE_CURVE[i][0]) {
+        const x0 = SCORE_CURVE[i-1][0], y0 = SCORE_CURVE[i-1][1];
+        const x1 = SCORE_CURVE[i][0],   y1 = SCORE_CURVE[i][1];
+        v = Math.round(y0 + (shortEdge - x0) / (x1 - x0) * (y1 - y0));
+        break;
+      }
+    }
+  }
+  v = Math.max(0, Math.min(100, v));
+  if (v >= 90) return { v, lbl:'PARFAIT',    chip:'ch-parfait',   seal:'seal-parfait',   bar:'#4ade80' };
+  if (v >= 75) return { v, lbl:'EXCELLENT',  chip:'ch-excellent', seal:'seal-excellent', bar:'#86efac' };
+  if (v >= 60) return { v, lbl:'BON',        chip:'ch-bon',       seal:'seal-bon',       bar:'#fbbf24' };
+  if (v >= 45) return { v, lbl:'CORRECT',    chip:'ch-correct',   seal:'seal-correct',   bar:'#fb923c' };
+  if (v >= 25) return { v, lbl:'FAIBLE',     chip:'ch-faible',    seal:'seal-faible',    bar:'#f43f5e' };
+  return             { v, lbl:'INSUFFISANT', chip:'ch-insuf',     seal:'seal-insuf',     bar:'#7f1d1d' };
+}
+
+function printQuality(w, h) {
+  const sh = Math.min(w, h), lg = Math.max(w, h);
+  const sz = (lg / 300 * 2.54).toFixed(0) + 'x' + (sh / 300 * 2.54).toFixed(0) + 'cm';
+  if (sh >= 3508) return { lbl: '✓✓ A3+', cls: 'ch-qgood', sz };
+  if (sh >= 2480) return { lbl: '✓ A4',   cls: 'ch-qgood', sz };
+  if (sh >= 1748) return { lbl: '~ A5',   cls: 'ch-qok',   sz };
+  return                 { lbl: '✗ PETIT',cls: 'ch-qbad',  sz };
+}
+
+/* ── CANVAS THUMBNAIL GENERATION ──────────────────────────── */
+function makeThumbnail(file) {
+  return new Promise(function(resolve, reject) {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = function() {
+      try {
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        const scale = Math.min(THUMB_MAX / w, THUMB_MAX / h, 1);
+        const cw = Math.round(w * scale);
+        const ch = Math.round(h * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = cw;
+        canvas.height = ch;
+        const ctx = canvas.getContext('2d', { alpha: false });
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, cw, ch);
+        const thumbUrl = canvas.toDataURL('image/jpeg', THUMB_Q);
+        URL.revokeObjectURL(url);
+        resolve({ thumbUrl: thumbUrl, w: w, h: h });
+      } catch(err) {
+        URL.revokeObjectURL(url);
+        reject(err);
+      }
+    };
+    img.onerror = function() {
+      URL.revokeObjectURL(url);
+      reject(new Error('Image load failed: ' + file.name));
+    };
+    img.src = url;
+  });
+}
+
+/* ── PROCESSING QUEUE ──────────────────────────────────────── */
+function startQueue(indices) {
+  jobQueue = indices.slice();
+  activeCount = 0;
+  doneCount   = 0;
+  drainQueue();
+}
+
+function drainQueue() {
+  while (activeCount < CONCURRENT && jobQueue.length > 0) {
+    var idx = jobQueue.shift();
+    activeCount++;
+    processPhoto(idx);
+  }
+}
+
+function processPhoto(idx) {
+  makeThumbnail(photos[idx].file).then(function(result) {
+    photos[idx].thumbUrl = result.thumbUrl;
+    photos[idx].width    = result.w;
+    photos[idx].height   = result.h;
+    updateCardDOM(idx);
+    updateStripThumb(idx);
+    if (view === 'tinder' && tidx === idx) renderTinder(idx, null);
+    updateStats();
+  }).catch(function(err) {
+    console.warn('Error processing photo', idx, err);
+    var b = el('card-badges-' + idx);
+    if (b) b.innerHTML = '<span class="chip ch-ph">Erreur lecture</span>';
+  }).finally(function() {
+    activeCount--;
+    doneCount++;
+    updateLoadBar();
+    drainQueue();
+  });
+}
+
+function updateLoadBar() {
+  var total = photos.length;
+  var pct   = total ? Math.round(doneCount / total * 100) : 0;
+  var fill  = el('loadFill');
+  var txt   = el('loadTxt');
+  var pill  = el('loadPill');
+  if (fill) fill.style.width = pct + '%';
+  if (txt)  txt.textContent  = 'Chargement ' + doneCount + '/' + total;
+  if (doneCount === total && pill) {
+    setTimeout(function() { pill.style.display = 'none'; }, 800);
+  }
+}
+
+/* ── APPLY LOADED DATA TO CARD ─────────────────────────────── */
+function updateCardDOM(idx) {
+  var p = photos[idx];
+
+  /* Replace shimmer with image */
+  var thumbEl = el('thumb-inner-' + idx);
+  if (thumbEl) {
+    thumbEl.innerHTML =
+      '<img src="' + p.thumbUrl + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease">' +
+      '<div class="card-num">#' + String(idx+1).padStart(3,'0') + '</div>';
+  }
+
+  /* Badges */
+  var badgesEl = el('card-badges-' + idx);
+  if (badgesEl) {
+    var q = printQuality(p.width, p.height);
+    var s = calcScore(p.width, p.height);
+    badgesEl.innerHTML =
+      '<span class="chip ch-dim"><i class="fas fa-ruler-combined"></i> ' + p.width + 'x' + p.height + '</span>' +
+      '<span class="chip ' + q.cls + '">' + q.lbl + '</span>' +
+      '<span class="chip ' + s.chip + '">◆ ' + s.v + '/100 · ' + s.lbl + '</span>';
+    var psEl = el('card-psize-' + idx);
+    if (psEl) psEl.textContent = q.sz + ' @ 300dpi';
+  }
+}
+
+function updateStripThumb(idx) {
+  var st = el('st-' + idx);
+  if (st && photos[idx].thumbUrl) st.src = photos[idx].thumbUrl;
+}
+
+/* ── STATS BAR ─────────────────────────────────────────────── */
+function updateStats() {
+  var total  = photos.length;
+  var tagged = 0;
+  var good   = 0;
+  for (var i = 0; i < photos.length; i++) {
+    if ((photos[i]._loc || '').trim()) tagged++;
+    if (photos[i].width && Math.min(photos[i].width, photos[i].height) >= 2480) good++;
+  }
+  el('sCnt').innerHTML  = '<i class="fas fa-images"></i> ' + total;
+  el('sTag').innerHTML  = '<i class="fas fa-map-marker-alt"></i> ' + tagged + '/' + total;
+  el('sGood').innerHTML = '<i class="fas fa-star"></i> ' + good + ' A4+';
+}
+
+/* ── LOC INPUT (grid) ──────────────────────────────────────── */
+function onGridLoc(idx) {
+  var raw = el('grid-loc-' + idx);
+  if (!raw) return;
+  var val = raw.value;
+  photos[idx]._loc = val;
+  var pv = el('grid-pv-' + idx);
+  if (pv) pv.innerHTML = previewHTML(idx, val);
+  /* sync to tinder if active */
+  if (view === 'tinder' && tidx === idx) {
+    var tl = el('tLoc');
+    if (tl) tl.value = val;
+    var tp = el('tPreview');
+    if (tp) tp.innerHTML = previewHTML(idx, val);
+  }
+  updateStats();
+}
+
+/* ── BUILD GRID ────────────────────────────────────────────── */
+function buildGrid() {
+  var grid = el('photoGrid');
+  grid.innerHTML = '';
+  var frag = document.createDocumentFragment();
+  for (var i = 0; i < photos.length; i++) {
+    (function(idx) {
+      var card = document.createElement('div');
+      card.className = 'card';
+      card.style.animationDelay = Math.min(idx * 0.025, 0.7) + 's';
+      card.innerHTML =
+        '<div class="card-thumb">' +
+          '<div id="thumb-inner-' + idx + '" style="position:absolute;inset:0">' +
+            '<div class="shimmer"></div>' +
+            '<div class="card-num">#' + String(idx+1).padStart(3,'0') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="card-body">' +
+          '<div class="card-fname" title="' + photos[idx].file.name + '">' + photos[idx].file.name + '</div>' +
+          '<div class="card-badges" id="card-badges-' + idx + '">' +
+            '<span class="chip ch-ph"><i class="fas fa-ruler-combined"></i> ...</span>' +
+            '<span class="chip ch-ph">...</span>' +
+            '<span class="chip ch-ph">SCORE ...</span>' +
+          '</div>' +
+          '<div class="card-psize" id="card-psize-' + idx + '"></div>' +
+          '<div class="loc-row">' +
+            '<span class="loc-lbl">📍 LIEU</span>' +
+            '<input class="loc-inp" id="grid-loc-' + idx + '" type="text"' +
+              ' value="' + (photos[idx]._loc || '') + '"' +
+              ' placeholder="Paris, Reunion, Maldives..."' +
+              ' oninput="onGridLoc(' + idx + ')"' +
+              ' autocomplete="off" spellcheck="false">' +
+          '</div>' +
+          '<div class="name-preview" id="grid-pv-' + idx + '"><span class="np-ph">-- entrez une localisation --</span></div>' +
+        '</div>';
+      /* Fix thumb wrapper positioning */
+      card.querySelector('.card-thumb').style.position = 'relative';
+      frag.appendChild(card);
+    })(i);
+  }
+  grid.appendChild(frag);
+}
+
+/* ── BUILD STRIP ───────────────────────────────────────────── */
+function buildStrip() {
+  var row   = el('stripRow');
+  var wrap  = el('stripWrap');
+  row.innerHTML = '';
+  wrap.style.display = photos.length ? 'block' : 'none';
+  var frag = document.createDocumentFragment();
+  for (var i = 0; i < photos.length; i++) {
+    (function(idx) {
+      var img = document.createElement('img');
+      img.className = 'strip-thumb';
+      img.id  = 'st-' + idx;
+      img.alt = photos[idx].file.name;
+      img.onclick = function() { renderTinder(idx, 'neutral'); };
+      if (photos[idx].thumbUrl) img.src = photos[idx].thumbUrl;
+      frag.appendChild(img);
+    })(i);
+  }
+  row.appendChild(frag);
+}
+
+/* ── TINDER RENDER ─────────────────────────────────────────── */
+function renderTinder(idx, dir) {
+  if (!photos.length) return;
+  if (idx < 0) idx = 0;
+  if (idx >= photos.length) idx = photos.length - 1;
+  tidx = idx;
+  var p = photos[idx];
+
+  /* Animate info panel */
+  var panel = el('tInfoPanel');
+  if (dir && dir !== 'neutral' && panel) {
+    panel.classList.remove('anim-r', 'anim-l');
+    void panel.offsetWidth;
+    panel.classList.add(dir === 'right' ? 'anim-r' : 'anim-l');
+  }
+
+  /* Image crossfade */
+  var imgEl = el('tImg');
+  imgEl.classList.add('fading');
+  setTimeout(function() {
+    imgEl.src = p.thumbUrl || '';
+    imgEl.onload  = function() { imgEl.classList.remove('fading'); };
+    imgEl.onerror = function() { imgEl.classList.remove('fading'); };
+    if (!p.thumbUrl) imgEl.classList.remove('fading');
+  }, 140);
+
+  /* Counter & filename */
+  el('tCnt').textContent   = (idx + 1) + ' / ' + photos.length;
+  el('tFname').textContent = p.file.name;
+
+  /* Badges & score */
+  if (p.width) {
+    var q = printQuality(p.width, p.height);
+    var s = calcScore(p.width, p.height);
+    el('tBadges').innerHTML =
+      '<span class="chip ch-dim"><i class="fas fa-ruler-combined"></i> ' + p.width + 'x' + p.height + '</span>' +
+      '<span class="chip ' + q.cls + '">' + q.lbl + ' · ' + q.sz + '</span>' +
+      '<span class="chip ' + s.chip + '">◆ ' + s.v + '/100 · ' + s.lbl + '</span>';
+    var seal = el('tSeal');
+    seal.className = 't-seal ' + s.seal;
+    el('tSealN').textContent = s.v;
+    el('tSealL').textContent = s.lbl;
+    el('tSbarNum').textContent = s.v + '/100';
+    var fill = el('tSbarFill');
+    fill.style.width      = '0%';
+    fill.style.background = s.bar;
+    /* Double rAF to trigger CSS transition */
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        fill.style.width = s.v + '%';
+      });
+    });
+  } else {
+    el('tBadges').innerHTML = '<span class="chip ch-ph">Chargement...</span>';
+    el('tSealN').textContent = '--';
+    el('tSealL').textContent = '';
+    el('tSbarNum').textContent = '--/100';
+    el('tSbarFill').style.width = '0%';
+  }
+
+  /* Location */
+  el('tLoc').value = p._loc || '';
+  el('tPreview').innerHTML = previewHTML(idx, p._loc || '');
+
+  /* Arrows */
+  el('arrL').disabled = (idx === 0);
+  el('arrR').disabled = (idx === photos.length - 1);
+
+  /* Strip highlight */
+  var thumbs = document.querySelectorAll('.strip-thumb');
+  for (var i = 0; i < thumbs.length; i++) {
+    thumbs[i].classList.toggle('on', i === idx);
+  }
+  var activeThumb = el('st-' + idx);
+  if (activeThumb) {
+    activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+}
+
+/* ── TINDER LOC INPUT ──────────────────────────────────────── */
+function onTinderLoc() {
+  var val = el('tLoc').value;
+  photos[tidx]._loc = val;
+  var gridLoc = el('grid-loc-' + tidx);
+  if (gridLoc) gridLoc.value = val;
+  var gridPv  = el('grid-pv-'  + tidx);
+  if (gridPv) gridPv.innerHTML = previewHTML(tidx, val);
+  el('tPreview').innerHTML = previewHTML(tidx, val);
+  updateStats();
+}
+
+/* ── TINDER NAVIGATION ─────────────────────────────────────── */
+function tinderNext() { if (tidx < photos.length - 1) renderTinder(tidx + 1, 'right'); }
+function tinderPrev() { if (tidx > 0)                 renderTinder(tidx - 1, 'left');  }
+
+document.addEventListener('keydown', function(e) {
+  if (view !== 'tinder' || !photos.length) return;
+  var tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') {
+    if (e.key === 'Enter') { e.preventDefault(); tinderNext(); }
+    return;
+  }
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'Enter') tinderNext();
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')  tinderPrev();
+});
+
+var touchX = 0, touchY = 0;
+el('tImgPanel').addEventListener('touchstart', function(e) {
+  touchX = e.touches[0].clientX;
+  touchY = e.touches[0].clientY;
+}, { passive: true });
+el('tImgPanel').addEventListener('touchend', function(e) {
+  var dx = e.changedTouches[0].clientX - touchX;
+  var dy = e.changedTouches[0].clientY - touchY;
+  if (Math.abs(dx) < 30 || Math.abs(dx) < Math.abs(dy)) return;
+  if (dx < 0) tinderNext(); else tinderPrev();
+});
+
+/* ── CAM / VIEW TOGGLES ────────────────────────────────────── */
+function setCam(c) {
+  cam = c;
+  el('btnDJI').classList.toggle('on', c === 'dji');
+  el('btnGPR').classList.toggle('on', c === 'gpr');
+  el('sCam').innerHTML = c === 'dji'
+    ? '<i class="fas fa-drone-alt"></i> DJI'
+    : '<i class="fas fa-camera"></i> GOPRO';
+  for (var i = 0; i < photos.length; i++) {
+    var pv = el('grid-pv-' + i);
+    if (pv) pv.innerHTML = previewHTML(i, photos[i]._loc || '');
+  }
+  if (view === 'tinder') renderTinder(tidx, null);
+}
+
+function setView(v) {
+  view = v;
+  el('btnGrid').classList.toggle('on',   v === 'grid');
+  el('btnTinder').classList.toggle('on', v === 'tinder');
+  el('gridSection').style.display   = (v === 'grid')   ? 'block' : 'none';
+  el('tinderSection').style.display = (v === 'tinder') ? 'block' : 'none';
+  if (v === 'tinder' && photos.length) renderTinder(tidx, null);
+}
+
+/* ── LOAD FOLDER ───────────────────────────────────────────── */
+el('folderInput').addEventListener('change', function(e) {
+  var files = Array.from(e.target.files)
+    .filter(function(f) { return f.type.startsWith('image/'); })
+    .sort(function(a, b) {
+      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
+  if (!files.length) { alert('Aucune image trouvee dans ce dossier.'); return; }
+
+  photos = files.map(function(f) {
+    return { file: f, thumbUrl: null, width: 0, height: 0, _loc: '' };
+  });
+  tidx = 0;
+
+  el('emptyState').style.display = 'none';
+  el('statsBar').style.display   = 'flex';
+  el('exportBtn').disabled        = false;
+  el('loadPill').style.display    = 'flex';
+  el('loadFill').style.width      = '0%';
+  el('loadTxt').textContent       = 'Chargement 0/' + photos.length;
+
+  buildGrid();
+  buildStrip();
+  updateStats();
+
+  /* Start concurrent thumbnail generation */
+  startQueue(photos.map(function(_, i) { return i; }));
+
+  if (view === 'tinder') renderTinder(0, null);
+
+  window.scrollTo({ top: document.querySelector('.controls').offsetTop - 10, behavior: 'smooth' });
+});
+
+/* ── EXPORT ────────────────────────────────────────────────── */
+async function exportAll() {
+  if (!photos.length) return;
+
+  var overlay = el('zipOverlay');
+  var fill    = el('zipFill');
+  var txt     = el('zipTxt');
+  overlay.classList.add('show');
+  fill.style.width = '0%';
+
+  var zip    = new JSZip();
+  var folder = zip.folder('photos_matteocean');
+  var now    = new Date();
+  var ds     = now.toLocaleDateString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+
+  var recap =
+    'PHOTO TAGGER RECAP MATTEOCEAN\n' +
+    '='.repeat(44) + '\n' +
+    'Date       : ' + ds + '\n' +
+    'Appareil   : ' + cam.toUpperCase() + '\n' +
+    'Total      : ' + photos.length + ' photo' + (photos.length > 1 ? 's' : '') + '\n' +
+    '='.repeat(44) + '\n\n';
+
+  var errors = 0;
+
+  for (var i = 0; i < photos.length; i++) {
+    var p    = photos[i];
+    var name = buildNewName(i);
+    var loc  = (p._loc || '').trim() || '(non renseignee)';
+    var dims = p.width ? p.width + 'x' + p.height + 'px' : 'inconnues';
+    var q    = p.width ? printQuality(p.width, p.height) : { lbl: '--', sz: '--' };
+    var s    = p.width ? calcScore(p.width, p.height)    : { v: 0, lbl: '--' };
+
+    fill.style.width = Math.round(i / photos.length * 85) + '%';
+    txt.textContent  = (i + 1) + '/' + photos.length + ' · ' + p.file.name;
+
+    try {
+      var buf = await p.file.arrayBuffer();
+      folder.file(name, buf);
+    } catch(err) {
+      console.error('Read error:', p.file.name, err);
+      errors++;
+    }
+
+    recap +=
+      String(i + 1).padStart(3, '0') + '. ' + p.file.name + '\n' +
+      '     > ' + name + '\n' +
+      '     📍 ' + loc + '\n' +
+      '     📐 ' + dims + '  |  ' + q.lbl + '  |  ' + q.sz + ' @ 300dpi\n' +
+      '     ◆  SCORE ' + s.v + '/100 · ' + s.lbl + '\n\n';
+  }
+
+  recap += '='.repeat(44) + '\nGenere par PHOTO TAGGER // MATTEOCEAN\n';
+  if (errors) recap += '⚠ ' + errors + ' erreur(s) de lecture\n';
+
+  zip.file('_recap_matteocean.txt', recap);
+  fill.style.width = '90%';
+  txt.textContent  = 'Compression...';
+
+  try {
+    var blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' }, function(meta) {
+      fill.style.width = (90 + meta.percent * 0.10) + '%';
+    });
+    fill.style.width = '100%';
+    txt.textContent  = 'Telechargement...';
+
+    var url = URL.createObjectURL(blob);
+    var a   = document.createElement('a');
+    a.href  = url;
+    a.download = 'photos_matteocean_' + now.toISOString().slice(0, 10) + '.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 3000);
+
+  } catch(err) {
+    alert('Erreur lors de la creation du ZIP:\n' + err.message);
+  }
+
+  setTimeout(function() {
+    overlay.classList.remove('show');
+    fill.style.width = '0%';
+  }, 500);
+}
+
+/* ── EASTER EGG ─────────────────────────────────────────────── */
+var eggCount = 0;
+el('logoText').addEventListener('click', function() {
+  eggCount++;
+  if (eggCount === 5) {
+    alert("I'm sorry Dave, I'm afraid I can't do that.");
+    eggCount = 0;
+  }
+});
+</script>
+
+</body>
+</html>

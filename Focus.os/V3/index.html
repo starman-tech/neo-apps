@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FOCUS PCSI</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    
+    <!-- IA & Icônes -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Polices -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- VARIABLES THEMES --- */
+        :root { --bg: #fff; --text: #000; }
+
+        /* THEME 1: BRUTALISM */
+        body.theme-brutal {
+            --bg: #f2f2f2;
+            --surface: #ffffff;
+            --text: #121212;
+            --border: 3px solid #121212;
+            --shadow: 5px 5px 0px #121212;
+            --green: #4ade80;
+            --red: #ef4444;
+            --yellow: #facc15;
+            --blue: #3b82f6;
+            --font-main: 'Space Mono', monospace;
+            --radius: 0px;
+        }
+
+        /* THEME 2: GLASS */
+        body.theme-glass {
+            --bg: #0f172a;
+            --surface: rgba(30, 41, 59, 0.8);
+            --text: #e2e8f0;
+            --border: 1px solid rgba(148, 163, 184, 0.2);
+            --shadow: 0 10px 30px rgba(0,0,0,0.5);
+            --green: #10b981;
+            --red: #f43f5e;
+            --yellow: #f59e0b;
+            --blue: #60a5fa;
+            --font-main: 'Inter', sans-serif;
+            --radius: 20px;
+            background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
+        }
+
+        /* --- GLOBAL --- */
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
+            transition: background 0.3s;
+        }
+
+        /* --- TOP BAR --- */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 30px; background: var(--surface); border-bottom: var(--border);
+            z-index: 50;
+        }
+        
+        .logo-group { display: flex; align-items: center; gap: 15px; }
+        .logo { font-weight: 800; font-size: 1.2rem; letter-spacing: -1px; text-transform: uppercase; }
+
+        /* INFO TOOLTIP */
+        .info-wrapper { position: relative; display: inline-block; }
+        .info-btn {
+            background: transparent; border: none; color: var(--text);
+            font-size: 1.2rem; cursor: pointer; opacity: 0.6; transition: 0.2s;
+        }
+        .info-btn:hover { opacity: 1; transform: scale(1.1); }
+        
+        .info-dropdown {
+            visibility: hidden; opacity: 0;
+            position: absolute; top: 100%; left: 0;
+            width: 300px;
+            background: var(--surface);
+            border: var(--border);
+            border-radius: var(--radius);
+            padding: 15px;
+            box-shadow: var(--shadow);
+            margin-top: 10px;
+            z-index: 100;
+            transition: 0.2s;
+            font-size: 0.85rem;
+            backdrop-filter: blur(10px);
+        }
+        .info-wrapper:hover .info-dropdown { visibility: visible; opacity: 1; transform: translateY(5px); }
+        
+        .insta-link {
+            display: block; margin-bottom: 10px; color: var(--text);
+            font-weight: bold; text-decoration: none; border-bottom: 1px solid var(--text);
+            padding-bottom: 5px;
+        }
+        .insta-link:hover { color: #E1306C; border-color: #E1306C; }
+        
+        .privacy-note { opacity: 0.8; line-height: 1.4; font-size: 0.8rem; }
+        .privacy-note i { color: var(--green); margin-right: 5px; }
+
+        /* BUTTONS TOP RIGHT */
+        .top-actions button {
+            background: transparent; border: var(--border); color: var(--text);
+            padding: 8px 15px; cursor: pointer; font-family: inherit; font-weight: bold;
+            box-shadow: var(--shadow); margin-left: 10px; border-radius: var(--radius);
+        }
+        .top-actions button:active { transform: translate(2px, 2px); box-shadow: none; }
+
+        /* --- LAYOUT --- */
+        .main-container {
+            display: grid; grid-template-columns: 1fr 380px; gap: 20px; padding: 20px;
+            height: calc(100vh - 70px); box-sizing: border-box;
+        }
+
+        /* VIDEO */
+        .video-wrapper {
+            background: #000; border: var(--border); border-radius: var(--radius);
+            box-shadow: var(--shadow); position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        video { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+        canvas { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 2; }
+
+        .status-badge {
+            position: absolute; top: 20px; left: 20px; background: var(--surface);
+            padding: 10px 20px; border: var(--border); font-weight: bold; z-index: 5;
+            display: flex; gap: 10px; align-items: center; border-radius: var(--radius);
+        }
+
+        /* MODE CALCULATRICE BADGE */
+        .calc-mode-badge {
+            position: absolute; top: 20px; right: 20px; background: var(--blue);
+            color: white; padding: 8px 15px; border-radius: var(--radius); font-weight: bold;
+            font-size: 0.8rem; z-index: 5; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* CONTROLS */
+        .controls-wrapper { display: flex; flex-direction: column; gap: 15px; }
+        .panel {
+            background: var(--surface); border: var(--border); padding: 20px;
+            border-radius: var(--radius); box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .input-group label { font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 5px; opacity: 0.7; }
+        .input-group input, .input-group select {
+            width: 100%; padding: 12px; background: rgba(0,0,0,0.05);
+            border: 1px solid var(--text); color: var(--text);
+            font-family: inherit; box-sizing: border-box; border-radius: 4px;
+        }
+
+        /* TOGGLE BUTTON CUSTOM */
+        .toggle-btn {
+            background: transparent; border: 1px solid var(--text); color: var(--text);
+            padding: 10px; width: 100%; margin-top: 10px; cursor: pointer;
+            font-family: inherit; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 10px;
+            opacity: 0.7; border-radius: 4px; transition: all 0.2s;
+        }
+        .toggle-btn.active {
+            background: var(--blue); color: white; border-color: var(--blue); opacity: 1; font-weight: bold;
+        }
+
+        .timer-display { font-size: 3.5rem; font-weight: 800; text-align: center; margin: 10px 0; font-variant-numeric: tabular-nums; }
+        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-box { text-align: center; padding: 10px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: calc(var(--radius) / 2); }
+        .stat-val { font-weight: bold; font-size: 1.2rem; display: block; }
+        .stat-lbl { font-size: 0.7rem; opacity: 0.7; }
+
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; }
+        .btn-big {
+            padding: 15px; border: var(--border); font-family: inherit; font-weight: bold; font-size: 1rem;
+            cursor: pointer; box-shadow: var(--shadow); border-radius: var(--radius); transition: all 0.2s; text-transform: uppercase;
+        }
+        .btn-big:hover { transform: translateY(-2px); }
+        .btn-big:active { transform: translateY(2px); box-shadow: none; }
+        .btn-big:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-start { background: var(--green); color: #000; }
+        .btn-pause { background: var(--yellow); color: #000; }
+        .btn-stop { background: var(--red); color: #fff; grid-column: span 2; margin-top: 10px; }
+
+        /* PENALTY & MODAL */
+        .penalty-screen {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 0;
+            background: repeating-linear-gradient(45deg, var(--red), var(--red) 10px, #000 10px, #000 20px);
+            opacity: 0.9; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #fff; transition: height 0.4s ease-out; overflow: hidden;
+        }
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
+            z-index: 100; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: var(--bg); border: var(--border); border-radius: var(--radius);
+            width: 80%; max-width: 800px; max-height: 80vh; padding: 30px;
+            display: flex; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.5); color: var(--text);
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(128,128,128,0.3); }
+
+        .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    </style>
+</head>
+<body class="theme-brutal">
+
+    <div id="loader" class="loader"><i class="fas fa-microchip fa-3x fa-spin" style="margin-bottom: 20px;"></i><h2>Chargement IA...</h2></div>
+
+    <!-- HEADER -->
+    <div class="top-bar">
+        <div class="logo-group">
+            <div class="logo"><i class="fas fa-eye"></i> FOCUS PCSI</div>
+            
+            <div class="info-wrapper">
+                <button class="info-btn"><i class="fas fa-info-circle"></i></button>
+                <div class="info-dropdown">
+                    <a href="https://www.instagram.com/matteocean/" target="_blank" class="insta-link">
+                        <i class="fab fa-instagram"></i> @matteocean
+                    </a>
+                    <div class="privacy-note">
+                        <i class="fas fa-shield-alt"></i> <strong>Confidentialité garantie :</strong><br>
+                        Ce site fonctionne 100% en local. Aucune image n'est envoyée vers un serveur.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="top-actions">
+            <button onclick="toggleHistory()"><i class="fas fa-history"></i> Historique</button>
+            <button onclick="toggleTheme()"><i class="fas fa-adjust"></i> Style</button>
+        </div>
+    </div>
+
+    <!-- MAIN INTERFACE -->
+    <div class="main-container">
+        <div class="video-wrapper">
+            <div id="statusBadge" class="status-badge"><i class="fas fa-check-circle"></i> <span>PRÊT</span></div>
+            <div id="calcBadge" class="calc-mode-badge"><i class="fas fa-calculator"></i> MATHS MODE</div>
+            <div id="penaltyScreen" class="penalty-screen"><h2><i class="fas fa-ban"></i> DISTRACTION</h2><h3 id="penaltyCount">30s</h3></div>
+            <video id="webcam" autoplay playsinline muted></video>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="controls-wrapper">
+            <div class="panel">
+                <div class="input-group">
+                    <label>Objectif</label>
+                    <input type="text" id="taskInput" placeholder="Ex: Maths, Code...">
+                </div>
+                <div class="input-group" style="margin-top: 15px;">
+                    <label>Mode</label>
+                    <select id="modeSelect" onchange="resetTimers()">
+                        <option value="stopwatch">⏱ Chrono</option>
+                        <option value="pomodoro">🍅 Pomodoro</option>
+                    </select>
+                </div>
+                <!-- BOUTON CALCULATRICE -->
+                <button id="btnCalcMode" class="toggle-btn" onclick="toggleCalcMode()">
+                    <i class="fas fa-calculator"></i> Autoriser Calculatrice
+                </button>
+            </div>
+
+            <div class="panel" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                <div id="mainTimer" class="timer-display">00:00:00</div>
+                <div class="stats-row">
+                    <div class="stat-box" style="border-color: var(--red); color: var(--red)">
+                        <span class="stat-val" id="timerPhone">00:00</span>
+                        <span class="stat-lbl">TEL</span>
+                    </div>
+                    <div class="stat-box" style="border-color: gray; color: gray">
+                        <span class="stat-val" id="timerAway">00:00</span>
+                        <span class="stat-lbl">ABS</span>
+                    </div>
+                </div>
+                <div class="action-grid">
+                    <button class="btn-big btn-start" id="btnStart" onclick="toggleStart()"><i class="fas fa-play"></i> GO</button>
+                    <button class="btn-big btn-pause" id="btnPause" onclick="togglePause()" disabled><i class="fas fa-pause"></i> PAUSE</button>
+                    <button class="btn-big btn-stop" id="btnStop" onclick="finishSession()" disabled><i class="fas fa-save"></i> FINIR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORY MODAL -->
+    <div id="historyModal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px">
+                <h2>Vos Sessions</h2>
+                <button onclick="toggleHistory()" class="btn-big" style="padding:5px 15px"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="flex:1; overflow-y:auto">
+                <table id="historyTable">
+                    <thead><tr><th>Date</th><th>Sujet</th><th>Durée</th><th>Dist.</th><th>Note</th></tr></thead>
+                    <tbody id="historyBody"></tbody>
+                </table>
+            </div>
+            <button onclick="clearHistory()" style="margin-top:20px; color:var(--red); background:none; border:1px solid var(--red); padding:10px; cursor:pointer">Effacer tout</button>
+        </div>
+    </div>
+
+<script>
+    const PENALTY_TIME = 30; 
+    let POMODORO_TIME = 25 * 60; 
+    
+    // CONFIGURATION DE LA DETECTION (Seuils ajustés pour éviter la calculatrice)
+    const THRESHOLD_STRICT = 0.50; // Il faut être sûr à 50% pour dire "TEL" (Par défaut)
+    const THRESHOLD_LENIENT = 0.85; // En mode calculatrice, il faut être sûr à 85% pour dire "TEL"
+
+    let model, video, canvas, ctx, isRunning = false, isPaused = false;
+    let timerWork = 0, timerPhone = 0, timerAway = 0, penaltyCounter = 0;
+    let detectPhone = false, detectPerson = false;
+    let isCalcMode = false;
+    let wakeLock = null;
+    let lastBeepTime = 0;
+
+    const els = {
+        loader: document.getElementById('loader'), mainTimer: document.getElementById('mainTimer'),
+        timerPhone: document.getElementById('timerPhone'), timerAway: document.getElementById('timerAway'),
+        statusBadge: document.getElementById('statusBadge'), penaltyScreen: document.getElementById('penaltyScreen'),
+        penaltyCount: document.getElementById('penaltyCount'), taskInput: document.getElementById('taskInput'),
+        modeSelect: document.getElementById('modeSelect'), btnStart: document.getElementById('btnStart'),
+        btnPause: document.getElementById('btnPause'), btnStop: document.getElementById('btnStop'),
+        historyModal: document.getElementById('historyModal'),
+        btnCalcMode: document.getElementById('btnCalcMode'),
+        calcBadge: document.getElementById('calcBadge')
+    };
+
+    async function init() {
+        if (localStorage.getItem('focus_theme')) document.body.className = localStorage.getItem('focus_theme');
+        try {
+            model = await cocoSsd.load();
+            video = document.getElementById('webcam'); canvas = document.getElementById('canvas'); ctx = canvas.getContext('2d');
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            video.srcObject = stream;
+            video.onloadeddata = () => {
+                video.play(); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                els.loader.style.display = 'none'; 
+                // Remplacé requestAnimationFrame par une boucle optimisée
+                schedulePredict(); 
+                setInterval(logicLoop, 1000);
+            };
+            loadHistory();
+        } catch (e) { alert("Erreur caméra: " + e); }
+    }
+    init();
+
+    // --- AUDIO SYSTEM (Oscillateur simple pour bip) ---
+    function playBeep() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const audioCtx = new AudioContext();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 880; // La5
+            gainNode.gain.value = 0.1;
+            oscillator.start();
+            setTimeout(() => { oscillator.stop(); audioCtx.close(); }, 150); // Bip court
+        } catch(e) {}
+    }
+
+    // --- WAKE LOCK ---
+    async function requestWakeLock() {
+        if ('wakeLock' in navigator) {
+            try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+        }
+    }
+
+    function toggleTheme() {
+        const newTheme = document.body.classList.contains('theme-brutal') ? 'theme-glass' : 'theme-brutal';
+        document.body.className = newTheme; localStorage.setItem('focus_theme', newTheme);
+    }
+    function toggleHistory() { els.historyModal.style.display = (els.historyModal.style.display === 'flex') ? 'none' : 'flex'; }
+    
+    function toggleCalcMode() {
+        isCalcMode = !isCalcMode;
+        if (isCalcMode) {
+            els.btnCalcMode.classList.add('active');
+            els.btnCalcMode.innerHTML = '<i class="fas fa-check"></i> Calculatrice Autorisée';
+            els.calcBadge.style.display = 'block';
+        } else {
+            els.btnCalcMode.classList.remove('active');
+            els.btnCalcMode.innerHTML = '<i class="fas fa-calculator"></i> Autoriser Calculatrice';
+            els.calcBadge.style.display = 'none';
+        }
+    }
+
+    // --- BOUCLE INTELLIGENTE (THROTTLE) ---
+    async function schedulePredict() {
+        const predictions = await model.detect(video);
+        handlePredictions(predictions);
+        
+        // Si l'onglet est caché, on ralentit drastiquement (5 FPS) pour économiser la batterie
+        // Sinon on vise 30 FPS pour la fluidité
+        const delay = document.hidden ? 200 : 30;
+        setTimeout(schedulePredict, delay);
+    }
+
+    function handlePredictions(predictions) {
+        detectPerson = false; detectPhone = false; ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const currentThreshold = isCalcMode ? THRESHOLD_LENIENT : THRESHOLD_STRICT;
+
+        predictions.forEach(p => {
+            const isPhone = p.class === 'cell phone'; const isPerson = p.class === 'person';
+            if (isPerson) detectPerson = true;
+            if (isPhone && p.score > currentThreshold) detectPhone = true;
+
+            if (isPerson || (isPhone && p.score > currentThreshold)) {
+                const color = isPhone ? getComputedStyle(document.body).getPropertyValue('--red') : getComputedStyle(document.body).getPropertyValue('--green');
+                ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.strokeRect(p.bbox[0], p.bbox[1], p.bbox[2], p.bbox[3]);
+                if (isPhone) { ctx.fillStyle = color; ctx.font = 'bold 20px monospace'; ctx.fillText("!!! PHONE !!!", p.bbox[0], p.bbox[1] - 10); }
+            }
+        });
+    }
+
+    function logicLoop() {
+        if (!isRunning || isPaused) {
+            document.title = "FOCUS PCSI";
+            return;
+        }
+
+        // Gestion Etats
+        if (detectPhone) { penaltyCounter = PENALTY_TIME; handleStatus('phone'); }
+        else if (penaltyCounter > 0) { penaltyCounter--; handleStatus('cooldown'); }
+        else if (detectPerson) { handleStatus('work'); }
+        else { handleStatus('away'); }
+        
+        updateDisplay();
+        updateTitle();
+    }
+
+    function updateTitle() {
+        let timeStr = "";
+        const s = timerWork;
+        if (s < 60) timeStr = s + "s";
+        else if (s < 3600) timeStr = Math.floor(s/60) + "min";
+        else timeStr = Math.floor(s/3600) + "h" + Math.floor((s%3600)/60) + "min";
+
+        if (penaltyCounter > 0 || detectPhone) {
+            // Clignotement du titre en cas d'alerte
+            document.title = (new Date().getSeconds() % 2 === 0) ? "⚠️ ALERTE TEL" : timeStr + " - FOCUS PCSI";
+        } else {
+            document.title = timeStr + " - FOCUS PCSI";
+        }
+    }
+
+    function handleStatus(state) {
+        if (state === 'phone' || state === 'cooldown') {
+            timerPhone++; setStatusUI('DISTRACTION', 'fa-exclamation-triangle', 'var(--red)');
+            els.penaltyScreen.style.height = '100%'; 
+            els.penaltyCount.innerText = state === 'phone' ? 'Détecté !' : `Attente : ${penaltyCounter}s`;
+            
+            // Logique BIP (toutes les 5s)
+            const now = Date.now();
+            if (now - lastBeepTime > 5000) {
+                playBeep();
+                lastBeepTime = now;
+            }
+
+        } else {
+            els.penaltyScreen.style.height = '0';
+            if (state === 'work') {
+                els.modeSelect.value === 'stopwatch' ? timerWork++ : (timerWork > 0 ? timerWork-- : finishSession(true));
+                setStatusUI('FOCUS', 'fa-brain', 'var(--green)');
+            } else { timerAway++; setStatusUI('ABSENT', 'fa-user-slash', 'gray'); }
+        }
+    }
+
+    function setStatusUI(text, icon, colorVar) {
+        const color = getComputedStyle(document.body).getPropertyValue(colorVar.replace('var(', '').replace(')', '')) || colorVar;
+        els.statusBadge.innerHTML = `<i class="fas ${icon}"></i> <span>${text}</span>`;
+        els.statusBadge.style.borderColor = color; els.statusBadge.style.color = color;
+    }
+
+    function toggleStart() {
+        if (!isRunning) {
+            if (!els.taskInput.value.trim()) return alert("Objectif requis !");
+            if (timerWork === 0 && els.modeSelect.value === 'pomodoro') timerWork = POMODORO_TIME;
+            isRunning = true; isPaused = false; 
+            updateBtnState(true); els.taskInput.disabled = true; els.modeSelect.disabled = true;
+            requestWakeLock();
+        }
+    }
+    function togglePause() { isPaused = !isPaused; els.btnPause.innerHTML = isPaused ? '<i class="fas fa-play"></i> REPRENDRE' : '<i class="fas fa-pause"></i> PAUSE'; }
+    function finishSession(auto = false) {
+        isRunning = false; if(auto) alert("Fini !");
+        let duration = els.modeSelect.value === 'stopwatch' ? timerWork : (POMODORO_TIME - timerWork);
+        saveSession(duration, timerPhone); resetTimers(); updateBtnState(false);
+        els.taskInput.disabled = false; els.modeSelect.disabled = false; els.penaltyScreen.style.height = '0'; setStatusUI('PRÊT', 'fa-check', 'var(--text)');
+        if (wakeLock) { wakeLock.release(); wakeLock = null; }
+        document.title = "FOCUS PCSI";
+    }
+    function updateBtnState(active) {
+        els.btnStart.disabled = active; els.btnPause.disabled = !active; els.btnStop.disabled = !active;
+        els.btnStart.innerHTML = active ? 'EN COURS...' : '<i class="fas fa-play"></i> GO';
+    }
+    function resetTimers() { timerPhone = 0; timerAway = 0; penaltyCounter = 0; timerWork = els.modeSelect.value === 'pomodoro' ? POMODORO_TIME : 0; updateDisplay(); }
+    function updateDisplay() { els.mainTimer.innerText = formatTime(timerWork); els.timerPhone.innerText = formatTime(timerPhone); els.timerAway.innerText = formatTime(timerAway); }
+    function formatTime(s) { return new Date(s * 1000).toISOString().substr(11, 8).replace(/^00:/, ''); }
+
+    function saveSession(work, dist) {
+        const ratio = dist / (work + 1);
+        let stars = ratio < 0.05 ? '<i class="fas fa-star" style="color:gold"></i>' : '<i class="fas fa-exclamation" style="color:var(--red)"></i>';
+        let hist = JSON.parse(localStorage.getItem('focus_history') || '[]');
+        hist.unshift({ date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), subject: els.taskInput.value, work: formatTime(work), dist: formatTime(dist), score: stars });
+        localStorage.setItem('focus_history', JSON.stringify(hist)); loadHistory(); toggleHistory();
+    }
+    function loadHistory() {
+        const hist = JSON.parse(localStorage.getItem('focus_history') || '[]');
+        document.getElementById('historyBody').innerHTML = hist.map(h => `<tr><td>${h.date}</td><td><strong>${h.subject}</strong></td><td>${h.work}</td><td style="color:var(--red)">${h.dist}</td><td>${h.score}</td></tr>`).join('');
+    }
+    function clearHistory() { if(confirm("Effacer ?")) { localStorage.removeItem('focus_history'); loadHistory(); } }
+</script>
+</body>
+</html>

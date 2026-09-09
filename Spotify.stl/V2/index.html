@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPOTIFY.STL</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- STYLE NEO-BRUTALISM DARK --- */
+        :root {
+            --bg: #121212;
+            --surface: #1e1e1e;
+            --text: #ffffff;
+            --border: 2px solid #ffffff; 
+            --shadow: 4px 4px 0px #ffffff; 
+            --accent: #1db954; 
+            --accent-hover: #1ed760;
+            --font-main: 'Space Mono', monospace;
+            --radius: 0px; 
+        }
+
+        body { font-family: var(--font-main); background-color: var(--bg); color: var(--text); margin: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: #111; border-left: 2px solid #333; }
+        ::-webkit-scrollbar-thumb { background: #444; border: 2px solid #111; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* TOP BAR */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--surface); border-bottom: var(--border); z-index: 50; }
+        .logo-group { display: flex; align-items: center; gap: 15px; }
+        .logo { font-weight: 800; font-size: 1.2rem; letter-spacing: -1px; text-transform: uppercase; color: var(--text); display:flex; align-items:center; gap:10px; }
+        .logo i { color: var(--accent); }
+
+        .info-wrapper { position: relative; display: inline-block; }
+        .info-btn { background: transparent; border: none; color: var(--text); font-size: 1.2rem; cursor: pointer; opacity: 0.8; transition: 0.2s; }
+        .info-btn:hover { opacity: 1; transform: scale(1.1); color: var(--accent); }
+        .info-dropdown { visibility: hidden; opacity: 0; position: absolute; top: 100%; left: 0; width: 280px; background: var(--surface); border: var(--border); padding: 20px; box-shadow: var(--shadow); margin-top: 15px; z-index: 100; transition: 0.2s; font-size: 0.8rem; }
+        .info-wrapper:hover .info-dropdown { visibility: visible; opacity: 1; transform: translateY(5px); }
+        .insta-link { display: block; margin-bottom: 10px; color: var(--accent); font-weight: bold; text-decoration: none; border-bottom: 1px solid var(--accent); padding-bottom: 5px; }
+        .insta-link:hover { color: #fff; border-color: #fff; }
+
+        /* LAYOUT */
+        .main-container { display: grid; grid-template-columns: 1fr 400px; gap: 20px; padding: 20px; height: calc(100vh - 72px); box-sizing: border-box; }
+        .viewer-wrapper { background: #222; border: var(--border); box-shadow: var(--shadow); position: relative; overflow: hidden; }
+        #gldiv { width: 100%; height: 100%; background: radial-gradient(circle at center, #2a2a2a 0%, #111 100%); }
+
+        /* CONTROLS */
+        .controls-wrapper { display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding-right: 5px; }
+        .panel { background: var(--surface); border: var(--border); padding: 20px; box-shadow: var(--shadow); }
+        h3 { margin: 0 0 15px 0; font-size: 0.9rem; text-transform: uppercase; border-bottom: 2px solid var(--text); padding-bottom: 5px; }
+
+        /* INPUTS */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { font-size: 0.7rem; text-transform: uppercase; display: block; margin-bottom: 5px; opacity: 0.8; font-weight: bold; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--text); color: var(--text); font-family: inherit; font-weight: bold; box-sizing: border-box; }
+        input[type="text"]:focus, select:focus { background: rgba(255,255,255,0.1); outline: none; border-color: var(--accent); }
+        select option { background: #121212; color: white; }
+
+        .checkbox-wrapper { display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 15px; background: rgba(255,255,255,0.05); padding: 10px; border: 1px solid white; }
+        .checkbox-wrapper input { cursor: pointer; accent-color: var(--accent); transform: scale(1.2); }
+        .checkbox-wrapper span { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
+
+        /* BUTTONS */
+        .btn-big { padding: 15px; border: var(--border); background: var(--surface); color: var(--text); font-family: inherit; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: var(--shadow); transition: all 0.1s; text-transform: uppercase; width: 100%; margin-top: 5px; }
+        .btn-big:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #fff; }
+        .btn-big:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px #fff; }
+        .btn-accent { background: var(--accent); color: #000; border-color: #000; box-shadow: 4px 4px 0px #000; }
+        .btn-accent:hover { box-shadow: 6px 6px 0px #000; }
+        
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .btn-small { padding: 10px; font-size: 0.8rem; border: 1px solid white; background: transparent; color: white; cursor: pointer; font-family: inherit; font-weight: bold; text-transform: uppercase; transition:0.2s; }
+        .btn-small:hover { background: white; color: black; }
+
+        .upload-zone { border: 2px dashed #555; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; background: rgba(255,255,255,0.02); margin-bottom: 10px; }
+        .upload-zone:hover { border-color: var(--accent); background: rgba(29, 185, 84, 0.1); }
+        
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: #555; margin-top: 10px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; background: var(--accent); border: 2px solid white; cursor: pointer; }
+        .color-picker-row { display: flex; gap: 10px; }
+        input[type="color"] { width: 100%; height: 35px; border: 1px solid white; background: none; padding: 2px; cursor: pointer; }
+        .status { font-size: 0.75rem; margin-top: 10px; min-height: 15px; color: var(--accent); font-weight: bold; }
+        .status.error { color: #ff5555; }
+        canvas { display: none; }
+    </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="logo-group">
+            <div class="logo"><i class="fab fa-spotify"></i> SPOTIFY.STL</div>
+            <div class="info-wrapper">
+                <button class="info-btn"><i class="fas fa-info-circle"></i></button>
+                <div class="info-dropdown">
+                    <a href="https://www.instagram.com/matteocean/" target="_blank" class="insta-link">
+                        <i class="fab fa-instagram"></i> @matteocean
+                    </a>
+                    <div style="opacity:0.8; line-height: 1.5;">
+                        Générateur de porte-clés STL.<br>
+                        Compatible Impression 3D.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="font-size:0.8rem; font-weight:bold; border: 1px solid white; padding: 5px 10px;">V1.1</div>
+    </div>
+
+    <div class="main-container">
+        <div class="viewer-wrapper">
+            <div id="gldiv"></div>
+        </div>
+
+        <div class="controls-wrapper">
+            <div class="panel">
+                <h3><i class="fas fa-satellite-dish"></i> Source</h3>
+                <div class="input-group">
+                    <label>Lien Spotify</label>
+                    <input type="text" id="spotifyLink" placeholder="https://open.spotify.com/track/..." value="https://open.spotify.com/album/4m2880jivSbbyEGAKfITCa">
+                </div>
+                <div class="input-group">
+                    <label>OU Fichier Image</label>
+                    <div class="upload-zone" id="dropZone">
+                        <i class="fas fa-file-import"></i> Drag & Drop Code
+                        <input type="file" id="fileInput" accept="image/*" style="display:none">
+                    </div>
+                </div>
+                <button class="btn-big btn-accent" id="generateBtn"><i class="fas fa-bolt"></i> GÉNÉRER</button>
+                <div id="statusMsg" class="status">Prêt.</div>
+            </div>
+
+            <div class="panel">
+                <h3><i class="fas fa-sliders-h"></i> Paramètres</h3>
+                
+                <div class="input-group">
+                    <label>Style du Modèle</label>
+                    <select id="modelType">
+                        <option value="stadium">Stadium (Arrondi)</option>
+                        <option value="standard">Standard (Rect)</option>
+                        <option value="rim_rect">Framed (Rect)</option>
+                        <option value="rim_stadium">Framed (Round)</option>
+          
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Texte (Aligné Droite)</label>
+                    <input type="text" id="customText" placeholder="Ex: Playlist Été">
+                </div>
+
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" id="showLogo" checked>
+                    <span><i class="fab fa-spotify"></i> Afficher Logo Spotify</span>
+                </label>
+
+                <div class="input-group">
+                    <label>Forme du Trou</label>
+                    <select id="holeShape">
+                        <option value="circle">Cercle</option>
+                        <option value="square">Carré</option>
+                        <option value="heart">Cœur</option>
+                        <option value="star">Étoile</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Taille du Trou (Scale)</label>
+                    <input type="range" id="holeScale" min="0.5" max="2.0" step="0.1" value="1.0">
+                </div>
+
+                <div class="input-group">
+                    <label>Couleurs (Base / Code)</label>
+                    <div class="color-picker-row">
+                        <input type="color" id="colorBase" value="#121212">
+                        <input type="color" id="colorCode" value="#1db954">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Épaisseur Base (mm)</label>
+                    <input type="range" id="baseHeight" min="2" max="6" step="0.5" value="3">
+                </div>
+                
+                <div class="input-group">
+                    <label>Relief Code (mm)</label>
+                    <input type="range" id="codeHeight" min="0.6" max="4" step="0.2" value="2.0">
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3><i class="fas fa-download"></i> Export STL</h3>
+                <button class="btn-big" id="dlFull"><i class="fas fa-cube"></i> Modèle Complet</button>
+                <div class="btn-group">
+                    <button class="btn-small" id="dlBase">Base Seule</button>
+                    <button class="btn-small" id="dlParts" style="color:var(--accent); border-color:var(--accent)">Code Seul</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="analysisCanvas"></canvas>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+    import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
+    import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+    import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+    import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+
+    // --- SETUP SCENE ---
+    const container = document.getElementById('gldiv');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a1a);
+
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(0, -60, 80);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(20, 20, 50);
+    scene.add(dirLight);
+
+    const grid = new THREE.GridHelper(200, 20, 0x1db954, 0x333333);
+    grid.rotation.x = Math.PI/2;
+    grid.position.z = -0.1;
+    scene.add(grid);
+
+    // --- STATE ---
+    const params = {
+        baseH: 3,
+        codeH: 2.0,
+        baseColor: 0x121212,
+        codeColor: 0x1db954,
+        text: "",
+        showLogo: true,
+        holeType: "circle",
+        holeScale: 1.0,
+        modelType: "stadium" 
+    };
+    let meshes = { base: null, code: null };
+    let currentBarHeights = [];
+    let font = null;
+
+    const loader = new FontLoader();
+    loader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', (res) => { font = res; });
+
+    const spotifySVGString = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+    </svg>`;
+
+    function setStatus(msg, isError=false) {
+        const el = document.getElementById('statusMsg');
+        el.textContent = msg;
+        el.className = isError ? 'status error' : 'status';
+    }
+
+    async function fetchSpotifyCode(uri) {
+        let cleanUri = uri;
+        if(uri.includes('open.spotify.com')) {
+            try {
+                const url = new URL(uri);
+                const parts = url.pathname.split('/').filter(p=>p);
+                cleanUri = `spotify:${parts[parts.length-2]}:${parts[parts.length-1]}`;
+            } catch(e) {}
+        }
+        if(!cleanUri.startsWith('spotify:')) cleanUri = 'spotify:' + cleanUri;
+
+        const codeUrl = `https://www.spotifycodes.com/downloadCode.php?uri=jpeg%2F000000%2Fwhite%2F640%2F${encodeURIComponent(cleanUri)}`;
+        const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(codeUrl)}&output=png`;
+
+        setStatus("Téléchargement...");
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => resolve(img);
+            img.onerror = () => reject("Impossible de charger l'image.");
+            img.src = proxyUrl;
+        });
+    }
+
+    function analyzeImage(img) {
+        setStatus("Analyse...");
+        const canvas = document.getElementById('analysisCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width; canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        const scale = img.width / 640;
+        const startX = Math.floor(160 * scale);
+        const endX = Math.floor((640 - 31) * scale);
+        
+        const imageData = ctx.getImageData(startX, 0, endX - startX, img.height);
+        const data = imageData.data;
+        const w = imageData.width;
+        const h = imageData.height;
+
+        let rawHeights = [];
+        for(let x=0; x<w; x++) {
+            let colH = 0;
+            let found = false;
+            for(let y=0; y<h; y++) {
+                const i = (y * w + x) * 4;
+                if(data[i] > 100) { found = true; colH++; }
+            }
+            if(found) rawHeights.push(colH);
+            else if(rawHeights.length > 0 && rawHeights[rawHeights.length-1] !== 0) rawHeights.push(0);
+        }
+
+        let bars = [];
+        let currentMax = 0;
+        let inBar = false;
+
+        rawHeights.forEach(val => {
+            if(val > 0) {
+                inBar = true;
+                if(val > currentMax) currentMax = val;
+            } else {
+                if(inBar) {
+                    bars.push(currentMax);
+                    currentMax = 0;
+                    inBar = false;
+                }
+            }
+        });
+        if(inBar) bars.push(currentMax);
+
+        if(bars.length === 0) return [];
+        
+        let minVal = Math.min(...bars);
+        let maxVal = Math.max(...bars);
+        if(maxVal === minVal) maxVal = minVal + 1;
+
+        const normalized = bars.map(b => {
+            let t = (b - minVal) / (maxVal - minVal);
+            return 0.2 + (t * 0.8);
+        });
+        return normalized;
+    }
+
+    // --- SHAPES ---
+
+    function createRoundedRectShape(width, height, radius) {
+        const shape = new THREE.Shape();
+        const x = 0, y = 0;
+        shape.moveTo(x + radius, y);
+        shape.lineTo(x + width - radius, y);
+        shape.quadraticCurveTo(x + width, y, x + width, y + radius);
+        shape.lineTo(x + width, y + height - radius);
+        shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        shape.lineTo(x + radius, y + height);
+        shape.quadraticCurveTo(x, y + height, x, y + height - radius);
+        shape.lineTo(x, y + radius);
+        shape.quadraticCurveTo(x, y, x + radius, y);
+        return shape;
+    }
+
+    function createStadiumShape(width, height) {
+        const shape = new THREE.Shape();
+        const x = 0; 
+        const y = 0;
+        const radius = height / 2;
+        shape.absarc(x + radius, y + radius, radius, Math.PI / 2, Math.PI * 1.5, false);
+        shape.lineTo(x + width - radius, y);
+        shape.absarc(x + width - radius, y + radius, radius, Math.PI * 1.5, Math.PI / 2, false);
+        shape.lineTo(x + radius, y + height);
+        return shape;
+    }
+
+    function createCapsuleShape(width, height) {
+        const shape = new THREE.Shape();
+        const r = width / 2;
+        const rectL = Math.max(0.01, height - width);
+        shape.moveTo(-r, -rectL/2);
+        shape.lineTo(-r, rectL/2);
+        shape.absarc(0, rectL/2, r, Math.PI, 0, true);
+        shape.lineTo(r, -rectL/2);
+        shape.absarc(0, -rectL/2, r, 0, Math.PI, true);
+        return shape;
+    }
+
+    function createHolePath(type, x, y, r) {
+        const path = new THREE.Path();
+        const size = r * 2.2;
+        if (type === 'square') {
+            const half = size / 2;
+            path.moveTo(x - half, y + half);
+            path.lineTo(x + half, y + half);
+            path.lineTo(x + half, y - half);
+            path.lineTo(x - half, y - half);
+            path.lineTo(x - half, y + half); 
+        } else if (type === 'heart') {
+            const s = size * 0.45; 
+            path.moveTo(x, y + s * 0.3); 
+            path.bezierCurveTo(x + s * 0.6, y + s * 1.0, x + s * 1.1, y + s * 0.2, x, y - s * 0.9);
+            path.bezierCurveTo(x - s * 1.1, y + s * 0.2, x - s * 0.6, y + s * 1.0, x, y + s * 0.3);
+        } else if (type === 'star') {
+            const outer = size * 0.6; const inner = size * 0.25; const spikes = 5;
+            let rot = Math.PI / 2 * 3; let cx = x; let cy = y; let step = Math.PI / spikes;
+            path.moveTo(cx, cy - outer);
+            for (let i = 0; i < spikes; i++) {
+                path.lineTo(cx + Math.cos(rot) * outer, cy + Math.sin(rot) * outer); rot -= step;
+                path.lineTo(cx + Math.cos(rot) * inner, cy + Math.sin(rot) * inner); rot -= step;
+            }
+            path.closePath();
+        } else {
+            path.absarc(x, y, r, 0, Math.PI*2, true);
+        }
+        return path;
+    }
+
+    // --- MAIN BUILD ---
+
+    function buildModel() {
+        if(currentBarHeights.length === 0) return;
+
+        if(meshes.base) { scene.remove(meshes.base); if(meshes.base.geometry) meshes.base.geometry.dispose(); }
+        if(meshes.code) { scene.remove(meshes.code); if(meshes.code.geometry) meshes.code.geometry.dispose(); }
+
+        const barSpacing = 1.95;
+        const barWidth = 1.0; 
+        const maxBarHeight = 11.5;
+        const margin = 4;
+        
+        const holeD = 5; 
+        const holeR_real = 2.5 * params.holeScale; 
+        const holeX = margin + holeR_real; 
+        
+        const logoSize = 10;
+        const logoSpace = params.showLogo ? (logoSize + 3) : 0; 
+        const logoStart = margin + (holeR_real*2) + 3;
+        const logoCenter = logoStart + logoSize/2;
+        
+        const barsStart = logoStart + logoSpace + 1;
+        const barsTotalW = currentBarHeights.length * barSpacing;
+        const totalLen = barsStart + barsTotalW + margin;
+        
+        const baseWidth = params.text ? 20 : 15; 
+        const extrudeH = params.baseH;
+        const reliefH = params.codeH;
+
+        const baseExtrudeOpts = { depth: extrudeH, bevelEnabled: false };
+        const rimExtrudeOpts = { depth: reliefH, bevelEnabled: false };
+
+        // --- 1. BASE GEOMETRY ---
+        let baseGeo;
+        const isContour = (params.modelType === 'contour' || params.modelType === 'contour_rim');
+
+        if (isContour || params.modelType === 'webbed') {
+            // MODE ORGANIQUE / WEBBED
+            if (params.modelType === 'webbed') {
+                // WEBBED: PAS DE BASE SOLIDE, MAIS DES LIENS
+                let links = [];
+
+                // Link Hole -> Logo
+                const bridgeW = logoCenter - holeX;
+                // Capsule link
+                const linkShape1 = createCapsuleShape(4, bridgeW + 4); 
+                const linkGeo1 = new THREE.ExtrudeGeometry(linkShape1, baseExtrudeOpts);
+                // Position horizontal
+                // Capsule is vert centered. Rotate Z 90.
+                linkGeo1.rotateZ(Math.PI/2);
+                linkGeo1.translate(holeX + bridgeW/2 - totalLen/2, 0, 0);
+                links.push(linkGeo1.toNonIndexed());
+
+                // Ring around hole
+                const ringShape = new THREE.Shape();
+                ringShape.absarc(0, 0, holeR_real + 2, 0, Math.PI*2, false);
+                const holeCut = createHolePath(params.holeType, 0, 0, holeR_real);
+                ringShape.holes.push(holeCut);
+                const ringGeo = new THREE.ExtrudeGeometry(ringShape, baseExtrudeOpts);
+                ringGeo.translate(holeX - totalLen/2, 0, 0);
+                links.push(ringGeo.toNonIndexed());
+                
+                // Link Logo -> Bars
+                // Just a central spine line
+                const spineStart = logoCenter;
+                const spineEnd = barsStart + barsTotalW;
+                const spineLen = spineEnd - spineStart;
+                const spineShape = createCapsuleShape(3, spineLen + 4);
+                const spineGeo = new THREE.ExtrudeGeometry(spineShape, baseExtrudeOpts);
+                spineGeo.rotateZ(Math.PI/2);
+                spineGeo.translate(spineStart + spineLen/2 - totalLen/2, 0, 0);
+                links.push(spineGeo.toNonIndexed());
+                
+                // Logo Base Disk
+                if(params.showLogo) {
+                    const lShape = new THREE.Shape();
+                    lShape.absarc(0,0, (logoSize/2), 0, Math.PI*2, false);
+                    const lGeo = new THREE.ExtrudeGeometry(lShape, baseExtrudeOpts);
+                    lGeo.translate(logoCenter - totalLen/2, 0, 0);
+                    links.push(lGeo.toNonIndexed());
+                }
+
+                if(links.length > 0) baseGeo = BufferGeometryUtils.mergeGeometries(links);
+
+            } else {
+                // MODE CONTOUR PLEIN (SQUELETTE COMPLET)
+                let baseParts = [];
+                // 1. Hole Disk
+                const holeBaseShape = new THREE.Shape();
+                holeBaseShape.absarc(0, 0, baseWidth/2, 0, Math.PI*2, false);
+                const holeCut = createHolePath(params.holeType, 0, 0, holeR_real);
+                holeBaseShape.holes.push(holeCut);
+                const holeGeo = new THREE.ExtrudeGeometry(holeBaseShape, baseExtrudeOpts);
+                holeGeo.translate(holeX - totalLen/2, 0, 0); 
+                baseParts.push(holeGeo.toNonIndexed());
+
+                // 2. Spine (Capsule from Hole to End)
+                const spineWidth = Math.max(baseWidth * 0.7, maxBarHeight + 2);
+                const spineLen = (barsStart + barsTotalW) - holeX;
+                const horizCapsShape = new THREE.Shape();
+                const r = spineWidth / 2;
+                horizCapsShape.absarc(0, 0, r, Math.PI/2, Math.PI*1.5, false);
+                horizCapsShape.lineTo(spineLen, -r);
+                horizCapsShape.absarc(spineLen, 0, r, Math.PI*1.5, Math.PI/2, false);
+                horizCapsShape.lineTo(0, r);
+                // Cut hole in spine too to avoid overlap glitches
+                horizCapsShape.holes.push(createHolePath(params.holeType, 0, 0, holeR_real));
+                
+                const spineGeo = new THREE.ExtrudeGeometry(horizCapsShape, baseExtrudeOpts);
+                const yOffset = params.text ? 2 : 0;
+                spineGeo.translate(holeX - totalLen/2, yOffset, 0);
+                baseParts.push(spineGeo.toNonIndexed());
+
+                // 3. Logo & Bars Bulges
+                // (Already covered by thick spine, but let's ensure logo fit)
+                if(params.showLogo) {
+                    const logoBaseShape = new THREE.Shape();
+                    logoBaseShape.absarc(0, 0, (logoSize/2) + 1.5, 0, Math.PI*2, false);
+                    const logoGeo = new THREE.ExtrudeGeometry(logoBaseShape, baseExtrudeOpts);
+                    logoGeo.translate(logoCenter - totalLen/2, yOffset, 0);
+                    baseParts.push(logoGeo.toNonIndexed());
+                }
+                currentBarHeights.forEach((hNorm, i) => {
+                    const actualH = hNorm * maxBarHeight;
+                    const baseCapShape = createCapsuleShape(barWidth + 2.0, actualH + 2.0);
+                    const capGeo = new THREE.ExtrudeGeometry(baseCapShape, baseExtrudeOpts);
+                    const xPos = (barsStart + (i * barSpacing)) - totalLen/2;
+                    capGeo.translate(xPos, yOffset, 0);
+                    baseParts.push(capGeo.toNonIndexed());
+                });
+
+                if(baseParts.length > 0) baseGeo = BufferGeometryUtils.mergeGeometries(baseParts);
+            }
+
+        } 
+        else {
+            // MODES RECT / STADIUM / FRAMED
+            let shape;
+            if(params.modelType.includes('stadium')) {
+                shape = createStadiumShape(totalLen, baseWidth);
+            } else {
+                shape = createRoundedRectShape(totalLen, baseWidth, 2);
+            }
+            
+            const hole = createHolePath(params.holeType, holeX, baseWidth/2, holeR_real);
+            shape.holes.push(hole);
+            baseGeo = new THREE.ExtrudeGeometry(shape, baseExtrudeOpts);
+            baseGeo.translate(-totalLen/2, -baseWidth/2, 0);
+        }
+        
+        if(baseGeo) {
+            meshes.base = new THREE.Mesh(baseGeo, new THREE.MeshStandardMaterial({ color: params.baseColor, roughness: 0.4, metalness: 0.1 }));
+            scene.add(meshes.base);
+        }
+
+        // --- 2. CODE GEOMETRY ---
+        let codeParts = [];
+
+        // OPTION: RIM (BORDURE)
+        if (params.modelType === 'rim_rect' || params.modelType === 'rim_stadium' || params.modelType === 'contour_rim') {
+            
+            if (params.modelType === 'contour_rim') {
+                // RIM FOR CONTOUR (Framed Organic)
+                // Creates a border around the Spine and Logo only (too messy for bars)
+                const yOffset = params.text ? 2 : 0;
+                // Spine Rim
+                const spineWidth = Math.max(baseWidth * 0.7, maxBarHeight + 2);
+                const spineLen = (barsStart + barsTotalW) - holeX;
+                const r = spineWidth / 2;
+                
+                // Outer Shape
+                const outerShape = new THREE.Shape();
+                outerShape.absarc(0, 0, r, Math.PI/2, Math.PI*1.5, false);
+                outerShape.lineTo(spineLen, -r);
+                outerShape.absarc(spineLen, 0, r, Math.PI*1.5, Math.PI/2, false);
+                outerShape.lineTo(0, r);
+                
+                // Inner Void
+                const wall = 1.0;
+                const innerShape = new THREE.Path();
+                const r2 = r - wall;
+                // Stop void before hole to avoid poly bug
+                const voidStart = holeR_real + wall + 2; 
+                
+                innerShape.absarc(voidStart, 0, r2, Math.PI/2, Math.PI*1.5, false); // Left Cap
+                innerShape.lineTo(spineLen, -r2);
+                innerShape.absarc(spineLen, 0, r2, Math.PI*1.5, Math.PI/2, false);
+                innerShape.lineTo(voidStart, r2);
+                
+                outerShape.holes.push(innerShape);
+                
+                // Cut hole
+                outerShape.holes.push(createHolePath(params.holeType, 0, 0, holeR_real + 0.1));
+                
+                const rimGeo = new THREE.ExtrudeGeometry(outerShape, rimExtrudeOpts);
+                rimGeo.translate(holeX - totalLen/2, yOffset, extrudeH);
+                codeParts.push(rimGeo.toNonIndexed());
+
+            } else {
+                // RIM FOR RECT/STADIUM
+                const isStadium = params.modelType === 'rim_stadium';
+                let rimShape;
+                if(isStadium) rimShape = createStadiumShape(totalLen, baseWidth);
+                else rimShape = createRoundedRectShape(totalLen, baseWidth, 2);
+
+                const wall = 1.2;
+                const w = totalLen - (wall*2);
+                const h = baseWidth - (wall*2);
+                const x = wall; const y = wall;
+                
+                // FIX POLY BUG: Inner void stops BEFORE hole
+                const innerShapePath = new THREE.Path();
+                const voidStartX = (holeX - totalLen/2) + holeR_real + wall + 2.0 + (totalLen/2); // Local coord
+                // Re-calculate local coords relative to 0,0 top-left used in shape gen
+                
+                // To keep it simple: Define the void as a rect/stadium that starts after the hole.
+                const safeStart = holeX + holeR_real + 1.5;
+                const safeW = totalLen - safeStart - wall;
+                
+                if(isStadium) {
+                    const r = (h/2);
+                    innerShapePath.absarc(safeStart + r, baseWidth/2, r, Math.PI/2, Math.PI*1.5, false);
+                    innerShapePath.lineTo(totalLen - wall - r, y);
+                    innerShapePath.absarc(totalLen - wall - r, baseWidth/2, r, Math.PI*1.5, Math.PI/2, false);
+                    innerShapePath.lineTo(safeStart + r, y + h);
+                } else {
+                    const r = 2;
+                    // Draw rect starting at safeStart
+                    innerShapePath.moveTo(safeStart, y);
+                    innerShapePath.lineTo(totalLen - wall, y);
+                    innerShapePath.lineTo(totalLen - wall, y + h);
+                    innerShapePath.lineTo(safeStart, y + h);
+                    innerShapePath.lineTo(safeStart, y);
+                }
+                
+                rimShape.holes.push(innerShapePath);
+                
+                // Cut hole
+                const ringHole = createHolePath(params.holeType, holeX, baseWidth/2, holeR_real + 0.1);
+                rimShape.holes.push(ringHole);
+
+                const rimGeo = new THREE.ExtrudeGeometry(rimShape, rimExtrudeOpts);
+                rimGeo.translate(-totalLen/2, -baseWidth/2, extrudeH);
+                codeParts.push(rimGeo.toNonIndexed());
+            }
+        }
+
+        // A. Logo
+        if (params.showLogo) {
+            const svgLoader = new SVGLoader();
+            const svgData = svgLoader.parse(spotifySVGString);
+            svgData.paths.forEach(path => {
+                const shapes = SVGLoader.createShapes(path);
+                shapes.forEach(s => {
+                    const geom = new THREE.ExtrudeGeometry(s, { depth: reliefH, bevelEnabled: false });
+                    const scale = 10/24;
+                    geom.scale(scale, scale, 1); 
+                    geom.rotateX(Math.PI); 
+                    const centerX = (logoCenter - 5) - totalLen/2;
+                    const yShift = params.text ? 2 : 0;
+                    const yBase = (isContour || params.modelType === 'webbed') ? 0 : 0; 
+                    const zPos = extrudeH + reliefH;
+                    geom.translate(centerX, yBase + 5 + yShift, zPos);
+                    codeParts.push(geom.toNonIndexed());
+                });
+            });
+        }
+
+        // B. Barres
+        const yOffset = params.text ? 2 : 0;
+        currentBarHeights.forEach((hNorm, i) => {
+            const actualH = hNorm * maxBarHeight;
+            const bShape = createCapsuleShape(barWidth, actualH);
+            const bGeo = new THREE.ExtrudeGeometry(bShape, { depth: reliefH, bevelEnabled: false });
+            const xPos = (barsStart + (i * barSpacing)) - totalLen/2;
+            bGeo.translate(xPos, yOffset, extrudeH);
+            codeParts.push(bGeo.toNonIndexed());
+        });
+
+        // C. Texte
+        if(params.text && font) {
+            const tGeo = new TextGeometry(params.text.toUpperCase(), {
+                font: font, size: 2.2, height: 0.6, curveSegments: 3
+            });
+            tGeo.computeBoundingBox();
+            const tWidth = tGeo.boundingBox.max.x - tGeo.boundingBox.min.x;
+            const endOfBarsX = (barsStart + barsTotalW) - totalLen/2;
+            const xPos = endOfBarsX - tWidth;
+            let yPos = -baseWidth/2 + 2; 
+            if (isContour || params.modelType === 'webbed') yPos = -6 + yOffset; 
+
+            tGeo.translate(xPos, yPos, extrudeH);
+            codeParts.push(tGeo.toNonIndexed());
+        }
+
+        if(codeParts.length > 0) {
+            const merged = BufferGeometryUtils.mergeGeometries(codeParts);
+            meshes.code = new THREE.Mesh(merged, new THREE.MeshStandardMaterial({ color: params.codeColor, roughness: 0.2 }));
+            scene.add(meshes.code);
+        }
+
+        setStatus("Modèle 3D généré.");
+    }
+
+    document.getElementById('generateBtn').addEventListener('click', async () => {
+        const link = document.getElementById('spotifyLink').value;
+        if(!link) return;
+        try {
+            const img = await fetchSpotifyCode(link);
+            currentBarHeights = analyzeImage(img);
+            buildModel();
+        } catch(e) { setStatus("Erreur: " + e, true); }
+    });
+
+    ['baseHeight', 'codeHeight', 'customText', 'showLogo', 'holeShape', 'modelType', 'holeScale'].forEach(id => {
+        document.getElementById(id).addEventListener(id === 'showLogo' ? 'change' : 'input', (e) => {
+            if(id==='baseHeight') params.baseH = parseFloat(e.target.value);
+            if(id==='codeHeight') params.codeH = parseFloat(e.target.value);
+            if(id==='customText') params.text = e.target.value;
+            if(id==='showLogo') params.showLogo = e.target.checked;
+            if(id==='holeShape') params.holeType = e.target.value;
+            if(id==='modelType') params.modelType = e.target.value;
+            if(id==='holeScale') params.holeScale = parseFloat(e.target.value);
+            buildModel();
+        });
+    });
+
+    document.getElementById('colorBase').addEventListener('input', (e) => {
+        params.baseColor = e.target.value;
+        if(meshes.base) meshes.base.material.color.set(params.baseColor);
+    });
+    document.getElementById('colorCode').addEventListener('input', (e) => {
+        params.codeColor = e.target.value;
+        if(meshes.code) meshes.code.material.color.set(params.codeColor);
+    });
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#1db954'; });
+    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = '#555'; });
+    dropZone.addEventListener('drop', (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+    function handleFile(file) {
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => { currentBarHeights = analyzeImage(img); buildModel(); };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function exportSTL(mesh, name) {
+        if(!mesh) return;
+        const exporter = new STLExporter();
+        const str = exporter.parse(mesh);
+        const blob = new Blob([str], {type:'text/plain'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = name;
+        link.click();
+    }
+    document.getElementById('dlBase').addEventListener('click', () => exportSTL(meshes.base, 'spotify_base.stl'));
+    document.getElementById('dlParts').addEventListener('click', () => exportSTL(meshes.code, 'spotify_code.stl'));
+    document.getElementById('dlFull').addEventListener('click', () => {
+        if(!meshes.base || !meshes.code) return;
+        const bGeo = meshes.base.geometry.clone();
+        bGeo.applyMatrix4(meshes.base.matrix);
+        const cGeo = meshes.code.geometry.clone();
+        cGeo.applyMatrix4(meshes.code.matrix);
+        const merged = BufferGeometryUtils.mergeGeometries([bGeo, cGeo]);
+        exportSTL(new THREE.Mesh(merged), 'spotify_full.stl');
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+
+</script>
+</body>
+</html>
