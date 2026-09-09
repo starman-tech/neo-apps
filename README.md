@@ -62,8 +62,8 @@ Charge un dossier entier, attribue une localisation à chaque cliché (vue grill
 Certaines apps utilisent des modules ES ou la webcam, ce qui interdit l'ouverture en `file://`. Le plus simple est de servir la racine du dépôt :
 
 ```bash
-git clone https://github.com/<user>/<repo>.git
-cd <repo>
+git clone https://github.com/starman-tech/neo-apps.git
+cd neo-apps
 python3 -m http.server 8000
 ```
 
